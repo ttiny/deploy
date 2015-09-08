@@ -1,0 +1,57 @@
+credentials:
+  github:
+    Perennials:
+      token: xxxxxxxxxxxxxxxxx
+      username: perennials-bot
+      password: '************'
+
+vars:
+  env: dev
+
+projects:
+  
+  ####
+  bonotel:
+    extends: supplier  
+
+  ####
+  ws2:
+    repos:
+      github/Perennials/providersdk-ws:
+        local: /apps/{project}/{branch}
+
+    docker:
+      image: 'docker.perennial.int/{project}:{branch.tag}'
+
+  ####
+  supplier:
+    template: true
+
+    vars:
+      local: /apps/supplier/{project}/{branch}
+
+    ################### this should go in include only for dev
+    #include: !iffile config/{project}.{env}.yml
+    repos:
+      github/Perennials/supplier-{project}:
+        alias: src
+        local: '{project.local}'
+        vars:
+          sdk-version: !cmd cat {repo.local}/supplier.php | grep providerkit-php/([^/]+)init.php
+        repos:
+          github/Perennials/providerkit-php#{repo.src.sdk-version}:
+            alias: sdk
+            local: '{repo.src.local}/lib/{project}'
+
+    docker:
+      image: 'docker.perennial.int/{project}:{branch.tag}'
+      basedir: '{project.local}/docker'
+    ###################
+
+    rocker:
+      vars:
+        env: '{env}'
+        name: '{project}'
+        version: '{branch}'
+
+    
