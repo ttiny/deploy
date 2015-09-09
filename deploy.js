@@ -109,7 +109,7 @@ class Deploy extends HttpApp {
 				project.exit();
 				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( err, branches ) {
 					if ( err ) {
-						console.error( 'Couldn\'t retrieve the list of branches for', project.name, ', skipping.' );
+						console.error( 'Couldn\'t retrieve the list of branches for', remote, ', skipping.' );
 						return;
 					}
 					for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -124,7 +124,7 @@ class Deploy extends HttpApp {
 	}
 
 	printUsage () {
-		console.log( 'dpl <action[,action]..> <project> [branch]' );
+		console.log( 'dpl <action[,action]..> <project> <branch>' );
 		console.log( '\nActions:' );
 		console.log( '\trun' );
 		console.log( '\tstop' );

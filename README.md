@@ -61,3 +61,5 @@ TODO
 - BitBucket support <https://bitbucket.org/atlassian/bitbucketjs>.
 - Consider webhook ips: <https://developer.github.com/v3/meta/>.
 - Mail on errors.
+- Be able to do things for projects/repos like events: pre-sync, post-sync, pre-clone, post-clone, pre-clean, post-clone, error, success.
+- Be able to have repo.branches: [ 1, '2.0', !!js/regexp '1.2.\d+' ] which will allow only this branches to be synced.
