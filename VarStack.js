@@ -1,27 +1,22 @@
 "use strict";
 
-function VarStack () {
-	this._prefix = '';
-	this._names = [];
-	this._levels = [];
-	this._vars = [];
-}
 
-VarStack.define( {
+class VarStack {
+	
+	constructor () {
+		this._levels = [];
+		this._vars = [];
+	}
 
-	push: function ( name ) {
+	push ( name ) {
 		this._levels.push( this._vars.length );
-		this._names.push( name );
-		this._prefix = this._names.join( '.' ) + ( this._names.length > 0 ? '.' : '' );
-	},
+	}
 
-	pop: function () {
+	pop () {
 		this._vars.length = this._levels.pop();
-		this._names.pop();
-		this._prefix = this._names.join( '.' ) + ( this._names.length > 0 ? '.' : '' );
-	},
+	}
 
-	get: function ( name ) {
+	get ( name ) {
 		var vars = this._vars;
 		for ( var i = vars.length - 1; i >= 0; --i ) {
 			var v = vars[ i ];
@@ -30,9 +25,9 @@ VarStack.define( {
 			}
 		}
 		return undefined;
-	},
+	}
 
-	set: function ( name, value ) {
+	set ( name, value ) {
 		var vars = this._vars;
 		for ( var i = vars.length - 1; i >= this._levels.last; --i ) {
 			var v = vars[ i ];
@@ -40,16 +35,28 @@ VarStack.define( {
 				return v.value = value;
 			}
 		}
-		return this._vars.push( { name: /*this._prefix +*/ name, value: value } );
-	},
+		return this._vars.push( { name: name, value: value } );
+	}
 
-	render: function ( str ) {
+	render ( str ) {
+
+		if ( !String.isString( str ) ) {
+			return str;
+		}
+
 		var _this = this;
 		return str.replace( /\{([^}]+)\}/g, function ( match, name ) {
-			return _this.get( name ) || match;
+			var val = _this.get( name ) || match;
+			if ( val instanceof Function ) {
+				val = val( global, require, _this );
+			}
+			else if ( val instanceof Object ) {
+				val = val.toString( _this );
+			}
+			return val;
 		} );
 	}
 
-} );
+}
 
 module.exports = VarStack;

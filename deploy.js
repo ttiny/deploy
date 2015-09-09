@@ -9,60 +9,70 @@ var Fs = require( 'fs' );
 var Project = require( './Project' );
 var VarStack = require( './VarStack' );
 
-function Deploy () {
-	HttpApp.call( this, DeployRequest, '0.0.0.0', 80 );
-
-	// this.setConfig( new Config( { storage: { log: __dirname + '/log' } } ) );
-
-	this._yaml = null;
-	this._vars = null;
-	// this._repos = null;
-	this._projects = null;
-	this._templates = null;
-	this._credentials = null;
-
-	Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ YamlCmd ] );
+class Deploy extends HttpApp {
 	
-	this.reloadConfig();
+	constructor () {
 
-	var argv = this.getArgv();
+		super( DeployRequest, '0.0.0.0', 80 );
 
-	if ( argv === null ||
-	    !String.isString( argv[ 0 ] ) ||
-	    !String.isString( argv[ 1 ] ) ||
-	    !String.isString( argv[ 2 ] ) ) {
+		// this.setConfig( new Config( { storage: { log: __dirname + '/log' } } ) );
 
-	    this.printUsage();
-		this.close();
-		return;
-	}
+		this._vars = null;
+		// this._repos = null;
+		this._projects = null;
+		this._templates = null;
+		this._credentials = null;
 
-	if ( !this.isValidAction( argv[ 0 ] ) ) {
+		Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ YamlCmd ] );
 		
-		this.printUsage();
-		this.close();
-		return;
-	}
+		this.reloadConfig();
 
-	this.doAction( argv[ 0 ], argv[ 1 ], argv[ 2 ] )
+		var argv = this.getArgv();
+
+		if ( argv === null ||
+		    !String.isString( argv[ 0 ] ) ||
+		    !String.isString( argv[ 1 ] ) ||
+		    !String.isString( argv[ 2 ] ) ) {
+
+		    this.printUsage();
+			this.close();
+			return;
+		}
+
+		var actions = argv[ 0 ].split( ',' );
+		for ( var i = actions.length - 1; i >= 0; --i ) {
+			if ( !this.isValidAction( actions[ i ] ) ) {
+				
+				this.printUsage();
+				this.close();
+				return;
+			}
+		}
+
+		for ( var i = 0, iend = actions.length; i < iend; ++i ) {
+			this.doAction( actions[ i ], argv[ 1 ], argv[ 2 ] );
+		}
+	}
 	
 
-}
-
-Deploy.extend( HttpApp, {
-
-	isValidAction: function ( name ) {
+	isValidAction ( name ) {
 		name = name.toLowerCase().toFirstUpperCase();
 		return Project.prototype[ name ] instanceof Function;
-	},
+	}
 
-	doSingleAction: function ( action, project, branch ) {
+	doSingleAction ( action, project, branch ) {
 		project.enter( branch );
-		project[ action ]();
+		console.log( action + 'ing project', project.getName(), '...' );
+		if ( project[ action ]( this.getArgv() ) ) {
+			console.log( 'All good.' )
+		}
+		else {
+			//todo: mail someone
+		}
 		project.exit();
-	},
+	}
 
-	doAction: function ( action, project, branch ) {
+	doAction ( action, project, branch ) {
 		
 		var _this = this;
 
@@ -91,7 +101,10 @@ Deploy.extend( HttpApp, {
 			var project = projects[ i ];
 
 			if ( branch === '*' ) {
-				project.getRepo().getBranches( function ( branches ) {
+				project.enter();
+				var remote = project.getRepo().getRemote();
+				project.exit();
+				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( branches ) {
 					_this.doSingleAction( action, project, branch );
 				} );
 			}
@@ -99,9 +112,9 @@ Deploy.extend( HttpApp, {
 				this.doSingleAction( action, project, branch );
 			}
 		}
-	},
+	}
 
-	printUsage: function () {
+	printUsage () {
 		console.log( 'dpl <action[,action]..> <project> [branch]' );
 		console.log( '\nActions:' );
 		console.log( '\trun' );
@@ -111,9 +124,9 @@ Deploy.extend( HttpApp, {
 		console.log( '\tpush' );
 		console.log( '\tclean' );
 
-	},
+	}
 
-	reloadConfig: function () {
+	reloadConfig () {
 		this._vars = new VarStack;
 		// this._repos = [];
 		this._projects = {};
@@ -122,10 +135,10 @@ Deploy.extend( HttpApp, {
 
 		var configFn = __dirname + '/config/local.yml';
 		var config = Fs.readFileSync( configFn, 'utf8' );
-		this._yaml = Yaml.load( config, { filename: configFn, schema: Yaml.DEPLOY_SCHEMA } );
+		var yaml = Yaml.load( config, { filename: configFn, schema: Yaml.DEPLOY_SCHEMA } );
 
 		// get top level vars
-		var vars = this._yaml.vars;
+		var vars = yaml.vars;
 		if ( vars instanceof Object ) {
 			for ( var name in vars ) {
 				this._vars.set( name, this._vars.render( vars[ name ] ) );
@@ -133,7 +146,7 @@ Deploy.extend( HttpApp, {
 		}
 
 		// build projects list
-		var projects = this._yaml.projects;
+		var projects = yaml.projects;
 		if ( projects instanceof Object ) {
 
 			// load the templates
@@ -150,24 +163,24 @@ Deploy.extend( HttpApp, {
 			for ( var name in projects ) {
 				var project = projects[ name ];
 				project.name = name;
-				this._projects[ name ] = new Project( this, project );
+				this._projects[ name ] = new Project( this, this._vars, project );
 			}
 		}
 
-		var credentials = this._yaml.credentials;
+		var credentials = yaml.credentials;
 		if ( credentials instanceof Object ) {
 			for ( var host in credentials ) {
 				var users = credentials[ host ];
 				for ( var user in users ) {
 					var name = host + '/' + user;
-					var HostApi = require( './hosts/' + host.toFirstUpperCase() );
+					var HostApi = require( './host/' + host.toFirstUpperCase() );
 					this._credentials[ name ] = new HostApi( user, users[ user ]  );
 				}
 			}
 		}
-	},
+	}
 
-	getHostApi: function ( repo ) {
+	getHostApi ( repo ) {
 
 		var repos = repo.split( '/' );
 		var host = repos[ 0 ];
@@ -182,44 +195,42 @@ Deploy.extend( HttpApp, {
 
 		return ret;
 		
-	},
+	}
 
-	getVars: function () {
-		return this._vars;
-	},
-
-	findProjectsByName: function ( name ) {
+	findProjectsByName ( name ) {
 		var project = this._projects[ name ];
 		if ( project ) {
 			return [ project ];
 		}
 		return [];
-	},
+	}
 
-	findProjectsByRepo: function ( name ) {
+	findProjectsByRepo ( name ) {
 		var projects = this._projects;
 		var ret = [];
 		for ( var name in projects ) {
 			var project = projects[ name ];
+			project.enter();
 			if ( project.isUsingRepo( name ) ) {
 				ret.push( project );
 			}
+			project.exit();
 		}
 		return ret;
-	},
+	}
 
-	getTemplate: function ( name ) {
+	getTemplate ( name ) {
 		return this._templates[ name ];
-	},
+	}
 
-	updateKnownRepos: function ( callback ) {
+	updateKnownRepos ( callback ) {
 
 		var _this = this;
-		var hostsLeft = 0;
+		var remotesLeft = 0;
 		var repos = [];
 		
-		function hostDone () {
-			if ( --hostsLeft === 0 ) {
+		function remoteDone () {
+			if ( --remotesLeft === 0 ) {
 				if ( callback instanceof Function ) {
 					_this._repos = repos;
 				}
@@ -229,25 +240,26 @@ Deploy.extend( HttpApp, {
 
 		// find list of repos
 		
-		var credentials = this._yaml.credentials;
-		if ( credentials instanceof Object ) {
-			for ( var host in credentials ) {
-				++hostsLeft;
-				// don't make 10000 requests while debuging
-				var repos = require( './debug/' + host + '-repos' );
-				hostDone();
-				/*
-				this.getHostApi().getRepos( function ( err, repos ) {
-					if ( err !== null ) {
-						repos = repos.concat( repos );
-					}
-					hostDone();
-				} );
-				//*/
-			}
+		var credentials = this._credentials;
+		for ( var remote in credentials ) {
+			++remotesLeft;
+			
+			// don't make 10000 requests while debuging
+			var repos = require( './debug/' + remote.replace( '/', '-' ) + '-repos' );
+			remoteDone();
+			///
+			
+			/*
+			this.getHostApi( remote ).getRepos( function ( err, repos ) {
+				if ( err !== null ) {
+					repos = repos.concat( repos );
+				}
+				remoteDone();
+			} );
+			//*/
 		}
 	}
 
-} );
+}
 
 new Deploy();

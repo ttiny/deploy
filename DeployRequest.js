@@ -1,11 +1,6 @@
 "use strict";
 
-var LoggedHttpAppRequest = require( 'Logging/LoggedHttpAppRequest' );
-
-function DeployRequest ( app, req, res ) {
-	LoggedHttpAppRequest.call( this, app, req, res )
+class DeployRequest {
 }
-
-DeployRequest.extend( LoggedHttpAppRequest );
 
 module.exports = DeployRequest;

@@ -1,19 +1,18 @@
 "use strict";
 
 var Yaml = require( 'js-yaml' );
+var ChildProcess = require( 'child_process' );
 
-function Cmd ( data ) {
-	this._data = data;
-}
-
-Cmd.define( {
-	toString: function () {
-
-		console.log( this._data );
-		return this._data;
-
+class Cmd {
+	constructor ( data ) {
+		this._cmd = data;
 	}
-} )
+	
+	toString ( vars ) {
+
+		return ChildProcess.execSync( vars.render( this._cmd ), { stdio: 'inherit' } ).toString( 'utf8' );
+	}
+}
 
 module.exports = new Yaml.Type( '!cmd', {
 	
