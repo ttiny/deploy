@@ -102,12 +102,19 @@ class Deploy extends HttpApp {
 
 			if ( branch === '*' ) {
 				project.enter( branch );
-				var remote = project.getRepo().getRemote();
+				var repo = project.getRepo();
+				repo.enter();
+				var remote = repo.getRemote();
+				repo.exit();
 				project.exit();
-				console.log(remote, remote.splitFirst( '/' ).right);
-				return false;
-				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( branches ) {
-					_this.doSingleAction( action, project, branch );
+				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( err, branches ) {
+					if ( err ) {
+						console.error( 'Couldn\'t retrieve the list of branches for', project.name, ', skipping.' );
+						return;
+					}
+					for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+						_this.doSingleAction( action, project, branches[ i ] );
+					}
 				} );
 			}
 			else {

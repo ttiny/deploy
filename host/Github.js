@@ -24,16 +24,14 @@ class Github {
 					repos[ i ] = repos[ i ].full_name;
 				}
 			}
-			callback( err || null, repos );
+			callback( err, repos );
 		} );
 	}
 
 	getBranches ( repo, callback ) {
-		throw new Error( 'TestMe' );
-		repo = repo.splitFirst( 'repo' );
+		repo = repo.splitFirst( '/' );
 		this._api.getRepo( repo.left, repo.right ).listBranches( function ( err, branches ) {
-			console.log( branches );
-			callback( err || null, repos );
+			callback( err, branches );
 		} );
 	}
 
