@@ -122,7 +122,10 @@ class Project {
 		if ( this._repo === null ) {
 			return false;
 		}
-		return this._repo.isUsingRepo( repo );
+		this._repo.enter();
+		var ret = this._repo.isUsingRepo( repo );
+		this._repo.exit();
+		return ret;
 	}
 
 	getRepo () {

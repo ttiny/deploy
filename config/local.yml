@@ -44,6 +44,8 @@ projects:
                 .match( /providerkit-php\/([^\/]+)\/init.php/ )[ 1 ];
             }
             catch ( e ) {
+              // global.console.error( e );
+              // global.console.log( vars )
               return 'master';
             }
           }

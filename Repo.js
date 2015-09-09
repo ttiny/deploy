@@ -96,15 +96,22 @@ class Repo {
 	}
 
 	isUsingRepo ( repo ) {
-		
-		var remote = Git.getFullRemote( this._remote );
-		if ( remote.repo == repo ) {
+
+		var src = Git.getFullRemote( this._remote );
+		var dest = Git.getFullRemote( repo );
+
+		if ( src.repo == dest.repo && src.branch == dest.branch ) {
+			
 			return true;
 		}
 
 		var submodules = this._submodules;
 		for ( var i = 0, iend = submodules.length; i < iend; ++i ) {
-			if ( submodules[ i ].isUsingRepo( repo ) ) {
+			var submodule = submodules[ i ];
+			submodule.enter();
+			var ret = submodule.isUsingRepo( repo );
+			submodule.exit();
+			if ( ret === true ) {
 				return true;
 			}
 		}

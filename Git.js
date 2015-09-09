@@ -35,8 +35,32 @@ class Git {
 	}
 
 	pull () {
-		var options = { stdio: 'inherit', cwd: this._local };
 
+		// check if the local matches remote or we have different project
+		var options = { stdio: undefined, cwd: this._local };
+		var args = [ 'remote', '-v' ];
+		var ret = Git.spawn( 'git', args, options );
+		if ( ret.status !== 0 ) {
+			return false;
+		}
+
+		var out = ret.output.join( '\n' );
+		console.log( out );
+
+		var match = out.match( /origin\s+(\S+)\s+\(fetch\)/ );
+		if ( match === null ) {
+			console.error( 'Couldn\'t identify the origin to fetch from.' );
+			return false;
+		}
+
+		if ( match[ 1 ] !== this._remote ) {
+			console.error( 'Repo origin mismatch: expected', this._remote, 'but found', match[ 1 ], 'in', this._local, '.' );
+			return false;
+		}
+
+		///
+
+		var options = { stdio: 'inherit', cwd: this._local };
 		var args = [ 'reset', '--hard' ];
 		var ret = Git.spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
@@ -131,6 +155,11 @@ class Git {
 		if ( branch.right ) {
 			remote = branch.left;
 			ret.branch = branch.right;
+		}
+
+		if ( remote.startsWith( 'git@' ) ) {
+			ret.repo = remote;
+			return ret;
 		}
 
 		remote = remote.replace( /^github(?=\/)/, Github.HostName );

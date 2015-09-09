@@ -78,7 +78,7 @@ class Deploy extends HttpApp {
 
 		if ( project === '*' ) {
 			this.updateKnownRepos( function ( repos ) {
-
+				
 				for ( var i = 0, iend = repos.length; i < iend; ++i ) {
 					_this.doAction( action, 'repo:' + repos[ i ], branch );
 				}
@@ -89,7 +89,7 @@ class Deploy extends HttpApp {
 
 		var projects = null;
 		if ( project.startsWith( 'repo:' ) ) {
-			projects = this.findProjectsByRepo( project.slice( 5 ) );
+			projects = this.findProjectsByRepo( project.slice( 5 ), branch );
 		}
 		else {
 			projects = this.findProjectsByName( project );
@@ -101,9 +101,11 @@ class Deploy extends HttpApp {
 			var project = projects[ i ];
 
 			if ( branch === '*' ) {
-				project.enter();
+				project.enter( branch );
 				var remote = project.getRepo().getRemote();
 				project.exit();
+				console.log(remote, remote.splitFirst( '/' ).right);
+				return false;
 				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( branches ) {
 					_this.doSingleAction( action, project, branch );
 				} );
@@ -205,13 +207,13 @@ class Deploy extends HttpApp {
 		return [];
 	}
 
-	findProjectsByRepo ( name ) {
+	findProjectsByRepo ( repo, branch ) {
 		var projects = this._projects;
 		var ret = [];
 		for ( var name in projects ) {
 			var project = projects[ name ];
-			project.enter();
-			if ( project.isUsingRepo( name ) ) {
+			project.enter( branch );
+			if ( project.isUsingRepo( repo ) ) {
 				ret.push( project );
 			}
 			project.exit();
@@ -227,14 +229,11 @@ class Deploy extends HttpApp {
 
 		var _this = this;
 		var remotesLeft = 0;
-		var repos = [];
+		var allrepos = [];
 		
 		function remoteDone () {
 			if ( --remotesLeft === 0 ) {
-				if ( callback instanceof Function ) {
-					_this._repos = repos;
-				}
-				callback( repos );
+				callback( allrepos );
 			}
 		}
 
@@ -245,18 +244,17 @@ class Deploy extends HttpApp {
 			++remotesLeft;
 			
 			// don't make 10000 requests while debuging
-			var repos = require( './debug/' + remote.replace( '/', '-' ) + '-repos' );
+			allrepos = require( './debug/' + remote.replace( '/', '-' ) + '-repos' );
 			remoteDone();
+			continue;
 			///
 			
-			/*
 			this.getHostApi( remote ).getRepos( function ( err, repos ) {
-				if ( err !== null ) {
-					repos = repos.concat( repos );
+				if ( err === null ) {
+					allrepos = allrepos.concat( repos );
 				}
 				remoteDone();
 			} );
-			//*/
 		}
 	}
 
