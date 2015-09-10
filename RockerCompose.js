@@ -11,15 +11,15 @@ class RockerCompose {
 		this._vars = null;
 	}
 
-	Run () {
-		return this._run( 'run' );
+	Run ( argv ) {
+		return this._run( 'run', argv );
 	}
 
-	Stop () {
-		return this._run( 'rm' );
+	Stop ( argv ) {
+		return this._run( 'rm', argv );
 	}
 
-	_run ( cmd ) {
+	_run ( cmd, argv ) {
 		var options = { stdio: 'inherit', cwd: this._path };
 		var args = [ cmd ];
 		if ( this._file ) {

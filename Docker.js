@@ -12,18 +12,24 @@ class Docker {
 		this._file = null;
 	}
 
-	Build () {
+	Build ( argv ) {
 		var options = { stdio: 'inherit' };
 		var args = [ 'build', '--force-rm', '-t', this._image ];
 		if ( this._file ) {
 			args.push( '-f', this._file );
+		}
+		if ( argv[ 'no-cache' ] ) {
+			args.push( '--no-cache' );
+		}
+		if ( argv[ 'pull' ] ) {
+			args.push( '--pull' );
 		}
 		args.push( this._path );
 		var ret = Docker.spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
 
-	Push () {
+	Push ( argv ) {
 		var options = { stdio: 'inherit' };
 		var args = [ 'push', this._image ];
 		var ret = Docker.spawn( 'docker', args, options );
