@@ -16,7 +16,7 @@ projects:
     #  remote: github/Perennials/docker
     #  local: {project.local}
 
-    #docker: !yamlfifle '!{project.local}/deploy.yml'
+    #docker: !yamlfifle '{project.local}/deploy.yml'
 
     docker:
       - image: docker.perennial.int/supplier2
@@ -71,7 +71,7 @@ projects:
         }
 
     ################### this should go in include only for dev
-    #include: !iffile config/{project}.{env}.yml
+    #extends: !yamlfile /config/deploy/supplier.{env}.yml
     repo:
       remote: github/Perennials/supplier-{project}
       local: '{project.local}'
