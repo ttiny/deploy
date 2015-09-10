@@ -33,7 +33,7 @@ class DeployRequest extends HttpAppRequest {
 		if ( host ) {
 			try {
 				var HostApi = require( './host/' + host.toFirstUpperCase() );
-				req = HostApi.parseRequest( this.Request.headers, content );
+				req = HostApi.parsePayload( this.Request.headers, content );
 			}
 			catch ( e ) {}
 		}

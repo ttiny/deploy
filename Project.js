@@ -23,18 +23,6 @@ class Project {
 		this._rockerCompose = null;
 		this._branches = null;
 
-		if ( this._data.repo ) {
-			this._repo = new Repo( this, this._data.repo );
-		}
-
-		if ( this._data.docker ) {
-			this._docker = new Docker( this, this._data.docker );
-		}
-		
-		if ( this._data[ 'rocker-compose' ] ) {
-			this._rockerCompose = new RockerCompose( this, this._data[ 'rocker-compose' ] );
-		}
-
 	}
 
 	Sync ( argv ) {
@@ -61,9 +49,17 @@ class Project {
 		if ( this._docker === null ) {
 			throw new Error( 'Can not build a project (' + this._name + ') without "docker" configuration.' );
 		}
-		this._docker.enter();
-		var ret = this._docker.Build( argv );
-		this._docker.exit();
+		var ret = false;
+		var dockers = this._docker;
+		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
+			var docker = dockers[ i ];
+			docker.enter();
+			ret = docker.Build( argv );
+			docker.exit();
+			if ( !ret ) {
+				return ret;
+			}
+		}
 		return ret;
 	}
 
@@ -71,9 +67,17 @@ class Project {
 		if ( this._docker === null ) {
 			throw new Error( 'Can not push a project (' + this._name + ') without "docker" configuration.' );
 		}
-		this._docker.enter();
-		var ret = this._docker.Push( argv );
-		this._docker.exit();
+		var ret = false;
+		var dockers = this._docker;
+		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
+			var docker = dockers[ i ];
+			docker.enter();
+			ret = docker.push( argv );
+			docker.exit();
+			if ( !ret ) {
+				return ret;
+			}
+		}
 		return ret;
 	}
 
@@ -107,12 +111,19 @@ class Project {
 		vars.set( 'branch.tag', branch === 'master' ? 'latest' : branch );
 		vars.set( 'branch.flat', branch.replace( /[^\d\w]/g, '' ) );
 
-		this._branches = [];
+		var locals = this._data.vars;
+		if ( locals instanceof Object ) {
+			for ( var name in locals ) {
+				vars.set( 'project.' + name, vars.render( yaml( locals[ name ], vars ) ) );
+			}
+		}
+
 		
-		var branches = this._data.branches;
+		this._branches = [];
+		var branches = yaml( this._data.branches, vars );
 		if ( branches instanceof Array ) {
 			for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-				this._branches.push( vars.render( branches[ i ] ) );
+				this._branches.push( vars.render( yaml( branches[ i ], vars ) ) );
 			}
 		}
 		else if ( branches !== undefined ) {
@@ -123,11 +134,25 @@ class Project {
 		}
 
 
-		var locals = this._data.vars;
-		if ( locals instanceof Object ) {
-			for ( var name in locals ) {
-				vars.set( 'project.' + name, vars.render( locals[ name ] ) );
+		if ( this._data.repo ) {
+			this._repo = new Repo( this, yaml( this._data.repo, vars ) );
+		}
+
+		if ( this._data.docker ) {
+			var docker = yaml( this._data.docker, vars );
+			if ( docker instanceof Array ) {
+				this._docker = [];
+				for ( var i = 0, iend = docker.length; i < iend; ++i ) {
+					this._docker.push( new Docker( this, yaml( docker[ i ], vars ) ) );
+				}
 			}
+			else {
+				this._docker = [ new Docker( this, docker ) ];
+			}
+		}
+		
+		if ( this._data[ 'rocker-compose' ] ) {
+			this._rockerCompose = new RockerCompose( this, yaml( this._data[ 'rocker-compose' ], vars ) );
 		}
 	}
 

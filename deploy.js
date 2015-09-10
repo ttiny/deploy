@@ -3,21 +3,17 @@
 var Config = require( 'App/Config' );
 var HttpApp = require( 'App/HttpApp' );
 var DeployRequest = require( './DeployRequest' );
-var Yaml = require( 'js-yaml' );
-var YamlCmd = require( './yamltypes/Cmd' );
-var Fs = require( 'fs' );
 var Project = require( './Project' );
 var VarStack = require( './VarStack' );
 var Netmask = require( 'netmask' ).Netmask;
 
+require( './YamlHelpers' );
+
 class Deploy extends HttpApp {
 	
 	constructor () {
-		
-		Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ YamlCmd ] );
-		var configFn = __dirname + '/config.yml';
-		var config = Fs.readFileSync( configFn, 'utf8' );
-		var yaml = Yaml.load( config, { filename: configFn, schema: Yaml.DEPLOY_SCHEMA } );
+
+		var yaml = LoadYaml( __dirname + '/config.yml' );
 
 		super( DeployRequest, yaml.http.host, yaml.http.port );
 		
@@ -185,9 +181,8 @@ class Deploy extends HttpApp {
 		this._templates = {};
 		this._credentials = {};
 
-		var configFn = __dirname + '/config/local.yml';
-		var config = Fs.readFileSync( configFn, 'utf8' );
-		var yaml = Yaml.load( config, { filename: configFn, schema: Yaml.DEPLOY_SCHEMA } );
+		var yaml = LoadYaml( __dirname + '/config/local.yml' );
+		
 
 		// get top level vars
 		var vars = yaml.vars;

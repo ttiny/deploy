@@ -9,7 +9,26 @@ vars:
   env: dev
 
 projects:
-  
+
+  ####
+  docker:
+    #repo:
+    #  remote: github/Perennials/docker
+    #  local: {project.local}
+
+    #docker: !iffile '!{project.local}/deploy.yml'
+
+    docker:
+      - image: docker.perennial.int/supplier2
+        path: git@github.com:Perennials/docker#:/supplier2
+      - image: docker.perennial.int/php:5.4
+        path: git@github.com:Perennials/docker#:/php54
+      - image: docker.perennial.int/nginx2
+        path: git@github.com:Perennials/docker#:/nginx2
+
+    vars:
+      local: /apps/docker
+
   ####
   bonotel:
     extends: supplier  
@@ -23,6 +42,7 @@ projects:
 
     docker:
       image: 'docker.perennial.int/{project}:{branch.tag}'
+      file: '{project.local}/docker'
 
   ####
   supplier:
@@ -55,7 +75,7 @@ projects:
 
     docker:
       image: 'docker.perennial.int/{project}:{branch.tag}'
-      file: '{project.local}/docker'
+      path: '{project.local}'
     ###################
 
     rocker-compose:

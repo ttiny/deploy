@@ -23,13 +23,13 @@ class RockerCompose {
 
 		// vars.push();
 		
-		this._file = vars.render( this._data.file );
+		this._file = vars.render( yaml( this._data.file, vars ) );
 		this._vars = {};
 
-		var rvars = this._data.vars;
+		var rvars = yaml( this._data.vars, vars );
 		if ( rvars instanceof Object ) {
 			for ( var name in rvars ) {
-				this._vars[ name ] = vars.render( rvars[ name ] );
+				this._vars[ name ] = vars.render( yaml( rvars[ name ], vars ) );
 			}
 		}
 

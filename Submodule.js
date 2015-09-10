@@ -36,8 +36,8 @@ class Submodule {
 	enter () {
 		var vars = this._repo.getProject().getVars();
 
-		this._remote = vars.render( this._data.remote );
-		this._local = vars.render( this._data.local );
+		this._remote = vars.render( yaml( this._data.remote, vars ) );
+		this._local = vars.render( yaml( this._data.local, vars ) );
 	}
 
 	exit () {

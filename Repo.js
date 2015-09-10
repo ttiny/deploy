@@ -10,17 +10,7 @@ class Repo {
 		this._data = data;
 		this._remote = null;
 		this._local = null;
-		this._submodules = [];
-
-		var submodules = data.submodules;
-		if ( submodules instanceof Object ) {
-			for ( var remote in submodules ) {
-				this._submodules.push( new Submodule(
-					this,
-					{ remote: remote, local: submodules[ remote ] }
-				) );
-			}
-		}
+		this._submodules = null;
 	}
 
 	Sync ( argv ) {
@@ -71,14 +61,25 @@ class Repo {
 
 		vars.push();
 
-		this._remote = vars.render( this._data.remote );
-		this._local = vars.render( this._data.local );
-		
-
-		var locals = this._data.vars;
+		var locals = yaml( this._data.vars, vars );
 		if ( locals instanceof Object ) {
 			for ( var name in locals ) {
-				vars.set( 'repo.' + name, vars.render( locals[ name ] ) );
+				vars.set( 'repo.' + name, vars.render( yaml( locals[ name ], vars ) ) );
+			}
+		}
+		
+		this._remote = vars.render( yaml( this._data.remote, vars ) );
+		this._local = vars.render( yaml( this._data.local, vars ) );
+		
+		this._submodules = [];
+
+		var submodules = yaml( data.submodules, vars );
+		if ( submodules instanceof Object ) {
+			for ( var remote in submodules ) {
+				this._submodules.push( new Submodule(
+					this,
+					{ remote: remote, local: yaml( submodules[ remote ], yaml ) }
+				) );
 			}
 		}
 	}

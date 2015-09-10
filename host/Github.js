@@ -60,7 +60,7 @@ class Github {
 		this._api.repos.getBranches( { user: repo.left, repo: repo.right }, handler );
 	}
 
-	static parseRequest ( headers, content ) {
+	static parsePayload ( headers, content ) {
 		var ret = {
 			action: null,
 			target: null,
