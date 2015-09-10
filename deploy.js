@@ -8,27 +8,52 @@ var YamlCmd = require( './yamltypes/Cmd' );
 var Fs = require( 'fs' );
 var Project = require( './Project' );
 var VarStack = require( './VarStack' );
+var Netmask = require( 'netmask' ).Netmask;
 
 class Deploy extends HttpApp {
 	
 	constructor () {
+		
+		Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ YamlCmd ] );
+		var configFn = __dirname + '/config.yml';
+		var config = Fs.readFileSync( configFn, 'utf8' );
+		var yaml = Yaml.load( config, { filename: configFn, schema: Yaml.DEPLOY_SCHEMA } );
 
-		super( DeployRequest, '0.0.0.0', 80 );
+		super( DeployRequest, yaml.http.host, yaml.http.port );
+		
+		var argv = this.getArgv();
+		if ( argv === null ) {
+			this.doServer( yaml );
+		}
+		else {
+			this.doCli();
+		}
 
-		// this.setConfig( new Config( { storage: { log: __dirname + '/log' } } ) );
+	}
 
+	doServer ( yaml ) {
+		console.log( 'Listening on', yaml.http.host + ':' + yaml.http.port, '...' );
+		var khs = yaml[ 'known-hosts' ];
+		this.KnownHosts = {};
+		this.SecretAccess = yaml[ 'secret-access' ];
+		if ( khs instanceof Object ) {
+			for ( var host in khs ) {
+				this.KnownHosts[ host ] = new Netmask( khs[ host ] );
+			}
+		}
+		this.startListening();
+	}
+	
+	doCli () {
 		this._vars = null;
-		// this._repos = null;
 		this._projects = null;
 		this._templates = null;
 		this._credentials = null;
 
-		Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ YamlCmd ] );
 		
 		this.reloadConfig();
 
 		var argv = this.getArgv();
-
 		if ( argv === null ||
 		    !String.isString( argv[ 0 ] ) ||
 		    !String.isString( argv[ 1 ] ) ||
@@ -53,7 +78,6 @@ class Deploy extends HttpApp {
 			this.doAction( actions[ i ], argv[ 1 ], argv[ 2 ] );
 		}
 	}
-	
 
 	isValidAction ( name ) {
 		name = name.toLowerCase().toFirstUpperCase();
@@ -62,6 +86,10 @@ class Deploy extends HttpApp {
 
 	doSingleAction ( action, project, branch ) {
 		project.enter( branch );
+		if ( !project.isBranchAllowed( branch ) ) {
+			project.exit();
+			return;
+		}
 		console.log( action + 'ing project', project.getName(), 'branch', branch, '...' );
 		console.log( '==========' );
 		if ( project[ action ]( this.getArgv() ) ) {
@@ -70,7 +98,7 @@ class Deploy extends HttpApp {
 		else {
 			//todo: mail someone
 		}
-		console.log( '\n\n' );
+		console.log( '\n' );
 		project.exit();
 	}
 
@@ -125,7 +153,7 @@ class Deploy extends HttpApp {
 			action = action.toLowerCase().toFirstUpperCase();
 
 			for ( var i = 0, iend = projects.length; i < iend; ++i ) {
-				var project = projects[ i ];
+				let project = projects[ i ];
 
 				if ( branch == '*' ) {
 					_this.getProjectBranches( project, function ( err, branches ) {
@@ -153,7 +181,6 @@ class Deploy extends HttpApp {
 
 	reloadConfig () {
 		this._vars = new VarStack;
-		// this._repos = [];
 		this._projects = {};
 		this._templates = {};
 		this._credentials = {};
@@ -246,9 +273,9 @@ class Deploy extends HttpApp {
 		var projects = this._projects;
 		var ret = {};
 		var projectsLeft = Object.keys( projects ).length;
-		for ( var name in projects ) {
-			let project = projects[ name ];
-			if ( branch == '*' ) {
+		if ( branch == '*' ) {
+			for ( var name in projects ) {
+				let project = projects[ name ];
 				this.getProjectBranches( project, function ( err, branches ) {
 					if ( err ) {
 						console.error( 'Couldn\'t retrieve the list of branches for', repo, ', skipping.' );
@@ -266,9 +293,12 @@ class Deploy extends HttpApp {
 						done( err );
 					}
 				} );
-				
 			}
-			else {
+			return;
+		}
+		else {
+			for ( var name in projects ) {
+				var project = projects[ name ];
 				project.enter( branch );
 				if ( project.isUsingRepo( repo ) ) {
 					ret[ project.getName() ] = project;

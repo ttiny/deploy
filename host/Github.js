@@ -60,6 +60,63 @@ class Github {
 		this._api.repos.getBranches( { user: repo.left, repo: repo.right }, handler );
 	}
 
+	static parseRequest ( headers, content ) {
+		var ret = {
+			action: null,
+			target: null,
+			repo: null,
+			branch: null,
+			tag: null
+		};
+
+		if ( headers[ 'X-GitHub-Event'.toLowerCase() ] !== 'push' ) {
+			return null;
+		}
+
+		var payload = null;
+		try {
+			payload = JSON.parse( content );
+		}
+		catch ( e ) {
+			return null;
+		}
+
+		if ( !(payload instanceof Object) ) {
+			return null;
+		}
+		
+		if ( payload.repository && payload.repository.full_name ) {
+			ret.repo = 'repo:github/' + payload.repository.full_name;
+		}
+		else {
+			return null;
+		}
+
+		if ( payload.ref ) {
+			var ref = payload.ref.split( '/' );
+			if ( ref[ ref.length - 2 ] !== 'heads' ) {
+				ret.target = 'tag';
+			}
+			else {
+				ret.target = 'branch';
+			}
+			ret[ ret.target ] = ref.last;
+		}
+		else {
+			return null;
+		}
+
+		if ( payload.deleted === true ) {
+			ret.action = 'clean';
+		}
+		else {
+			ret.action = 'sync';
+		}
+
+		return ret;
+		
+	}
+
 }
 
 Github.static( {

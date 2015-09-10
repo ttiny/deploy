@@ -21,6 +21,7 @@ class Project {
 		this._repo = null;
 		this._docker = null;
 		this._rockerCompose = null;
+		this._branches = null;
 
 		if ( this._data.repo ) {
 			this._repo = new Repo( this, this._data.repo );
@@ -106,6 +107,22 @@ class Project {
 		vars.set( 'branch.tag', branch === 'master' ? 'latest' : branch );
 		vars.set( 'branch.flat', branch.replace( /[^\d\w]/g, '' ) );
 
+		this._branches = [];
+		
+		var branches = this._data.branches;
+		if ( branches instanceof Array ) {
+			for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+				this._branches.push( vars.render( branches[ i ] ) );
+			}
+		}
+		else if ( branches !== undefined ) {
+			this._branches.push( vars.render( branches ) );
+		}
+		else {
+			this._branches.push( '*' );
+		}
+
+
 		var locals = this._data.vars;
 		if ( locals instanceof Object ) {
 			for ( var name in locals ) {
@@ -116,6 +133,25 @@ class Project {
 
 	exit () {
 		this._vars.pop();
+	}
+
+	isBranchAllowed ( branch ) {
+		var branch = this._vars.get( 'branch' );
+		var branches = this._branches;
+		for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+			var branch2 = branches[ i ];
+			if ( Number.isNumber( branch2 ) ) {
+				branch2 = branch2.toString();
+			}
+			if ( String.isString( branch2 ) && (branch == branch2 || branch2 == '*') ) {
+				return true;
+			}
+			else if ( branch2 instanceof RegExp && branch.match( branch2 ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	isUsingRepo ( repo ) {

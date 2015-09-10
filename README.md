@@ -47,19 +47,15 @@ REST
 ====
 
 ```
-dpl/sync/<project>/<branch>/[/clean]
+sync/<project>/<branch>
 optional github/bitbucket payload
 ```
-- if project is supplied and different from payload - ignore
-- if branch is supplied and different from payload - ignore
-- otherwise update all projects with matching repo
 
 
 TODO
 ====
 
 - BitBucket support <https://bitbucket.org/atlassian/bitbucketjs>.
-- Consider webhook ips: <https://developer.github.com/v3/meta/>.
+- GitLab support <https://gitlab.com/gitlab-org/gitlab-ce/blob/master/doc/web_hooks/web_hooks.md>.
 - Mail on errors.
 - Be able to do things for projects/repos like events: pre-sync, post-sync, pre-clone, post-clone, pre-clean, post-clone, error, success.
-- Be able to have repo.branches: [ 1, '2.0', !!js/regexp '1.2.\d+' ] which will allow only this branches to be synced.

@@ -1,0 +1,9 @@
+http:
+  host: 0.0.0.0
+  port: 1337
+
+known-hosts:
+  localhost: 127.0.0.1
+  github: 192.30.252.0/22
+
+secret-access: ''

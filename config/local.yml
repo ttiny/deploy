@@ -16,6 +16,7 @@ projects:
 
   ####
   ws2:
+    branches: [ 'master', !!js/regexp '^\d+\.\d+$' ]
     repo:
       remote: github/Perennials/providersdk-ws
       local: /apps/{project}/{branch}
