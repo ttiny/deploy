@@ -1,38 +1,63 @@
 "use strict";
 
-var GithubApi = require( 'github-api' );
+var GithubApi = require( 'github' );
 
 class Github {
 
 	constructor ( user, auth ) {
 
-		if ( auth.token ) {
-			this._api = new GithubApi( { auth: 'oauth', token: auth.token } );
+		this._api = new GithubApi( { version: "3.0.0" } );
+		
+		if ( auth && auth.token ) {
+			this._api.authenticate( { type: 'oauth', token: auth.token } );
 		}
-		else if ( auth.username && auth.password ) {
-			this._api = new GithubApi( { auth: 'basic', username: auth.username, password: auth.password } );
-		}
-		else {
-			throw new Error( 'GitHub authentication for ' + user + ' is missing.' );
+		else if ( auth && auth.username && auth.password ) {
+			this._api.authenticate( { type: 'basic', username: auth.username, password: auth.password } );
 		}
 	}
 
 	getRepos ( callback ) {
-		this._api.getUser().repos( function ( err, repos ) {
+		var client = this._api;
+		var allrepos = [];
+
+		function handler ( err, repos ) {
 			if ( repos ) {
 				for ( var i = repos.length - 1; i >= 0; --i ) {
 					repos[ i ] = repos[ i ].full_name;
 				}
+				allrepos = allrepos.concat( repos );
 			}
-			callback( err, repos );
-		} );
+			if ( err || !client.hasNextPage( repos ) ) {
+				callback( err, allrepos );
+				return;
+			}
+			client.getNextPage( repos, handler );
+
+		}
+
+		this._api.repos.getAll( {}, handler );
 	}
 
 	getBranches ( repo, callback ) {
 		repo = repo.splitFirst( '/' );
-		this._api.getRepo( repo.left, repo.right ).listBranches( function ( err, branches ) {
-			callback( err, branches );
-		} );
+		var client = this._api;
+		var allbranches = [];
+
+		function handler ( err, branches ) {
+			if ( branches ) {
+				for ( var i = branches.length - 1; i >= 0; --i ) {
+					branches[ i ] = branches[ i ].name;
+				}
+				allbranches = allbranches.concat( branches );
+			}
+			if ( err || !client.hasNextPage( branches ) ) {
+				callback( err, allbranches );
+				return;
+			}
+			client.getNextPage( branches, handler );
+		}
+
+		this._api.repos.getBranches( { user: repo.left, repo: repo.right }, handler );
 	}
 
 }

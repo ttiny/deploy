@@ -62,13 +62,15 @@ class Deploy extends HttpApp {
 
 	doSingleAction ( action, project, branch ) {
 		project.enter( branch );
-		console.log( action + 'ing project', project.getName(), '...' );
+		console.log( action + 'ing project', project.getName(), 'branch', branch, '...' );
+		console.log( '==========' );
 		if ( project[ action ]( this.getArgv() ) ) {
 			console.log( 'All good.' )
 		}
 		else {
 			//todo: mail someone
 		}
+		console.log( '\n\n' );
 		project.exit();
 	}
 
@@ -76,7 +78,7 @@ class Deploy extends HttpApp {
 		
 		var _this = this;
 
-		if ( project === '*' ) {
+		if ( project == '*' ) {
 			this.updateKnownRepos( function ( repos ) {
 				
 				for ( var i = 0, iend = repos.length; i < iend; ++i ) {
@@ -89,50 +91,64 @@ class Deploy extends HttpApp {
 
 		var projects = null;
 		if ( project.startsWith( 'repo:' ) ) {
-			projects = this.findProjectsByRepo( project.slice( 5 ), branch );
-		}
-		else {
-			projects = this.findProjectsByName( project );
-		}
 
-		action = action.toLowerCase().toFirstUpperCase();
+			var repo = project.slice( 5 );
+			if ( project.indexOf( '#' ) < 0 ) {
 
-		for ( var i = 0, iend = projects.length; i < iend; ++i ) {
-			var project = projects[ i ];
+				if ( branch == '*' ) {
+					this.getHostApi( repo ).getBranches( repo.splitFirst( '/' ).right, function ( err, branches ) {
+						if ( err ) {
+							console.error( 'Couldn\'t retrieve the list of branches for', repo, ', skipping.' );
+							return;
+						}
+						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+							_this.doAction( action, project, branches[ i ] );
+						}
+					} );
+					return;
+				}
 
-			if ( branch === '*' ) {
-				project.enter( branch );
-				var repo = project.getRepo();
-				repo.enter();
-				var remote = repo.getRemote();
-				repo.exit();
-				project.exit();
-				this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, function ( err, branches ) {
-					if ( err ) {
-						console.error( 'Couldn\'t retrieve the list of branches for', remote, ', skipping.' );
-						return;
-					}
-					for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-						_this.doSingleAction( action, project, branches[ i ] );
-					}
-				} );
+				repo += '#' + branch;
+				branch = '*';
 			}
 			else {
-				this.doSingleAction( action, project, branch );
+				branch = '*';
 			}
+
+			this.findProjectsByRepo( repo, branch, handleProjects );
 		}
+		else {
+			handleProjects( null, this.findProjectsByName( project ) );
+		}
+
+		function handleProjects ( err, projects ) {
+			action = action.toLowerCase().toFirstUpperCase();
+
+			for ( var i = 0, iend = projects.length; i < iend; ++i ) {
+				var project = projects[ i ];
+
+				if ( branch == '*' ) {
+					_this.getProjectBranches( project, function ( err, branches ) {
+						if ( err ) {
+							console.error( 'Couldn\'t retrieve the list of branches for', remote, ', skipping.' );
+							return;
+						}
+						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+							_this.doSingleAction( action, project, branches[ i ] );
+						}
+					} );
+				}
+				else {
+					_this.doSingleAction( action, project, branch );
+				}
+			}	
+		}
+
+		
 	}
 
 	printUsage () {
 		console.log( 'dpl <action[,action]..> <project> <branch>' );
-		console.log( '\nActions:' );
-		console.log( '\trun' );
-		console.log( '\tstop' );
-		console.log( '\tsync' );
-		console.log( '\tbuild' );
-		console.log( '\tpush' );
-		console.log( '\tclean' );
-
 	}
 
 	reloadConfig () {
@@ -199,11 +215,23 @@ class Deploy extends HttpApp {
 		var ret = this._credentials[ name ];
 
 		if ( ret === undefined ) {
-			throw new Error( 'No credentials found for ' + repo + '.' )
+			console.log( 'No credentials found for', repo, '. Assuming public repo.' )
+			var HostApi = require( './host/' + host.toFirstUpperCase() )
+			return new HostApi();
 		}
 
 		return ret;
 		
+	}
+
+	getProjectBranches ( project, callback ) {
+		project.enter( '*' );
+		var repo = project.getRepo();
+		repo.enter();
+		var remote = repo.getRemote();
+		repo.exit();
+		project.exit();
+		this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, callback );
 	}
 
 	findProjectsByName ( name ) {
@@ -214,18 +242,46 @@ class Deploy extends HttpApp {
 		return [];
 	}
 
-	findProjectsByRepo ( repo, branch ) {
+	findProjectsByRepo ( repo, branch, callback ) {
 		var projects = this._projects;
-		var ret = [];
+		var ret = {};
+		var projectsLeft = Object.keys( projects ).length;
 		for ( var name in projects ) {
-			var project = projects[ name ];
-			project.enter( branch );
-			if ( project.isUsingRepo( repo ) ) {
-				ret.push( project );
+			let project = projects[ name ];
+			if ( branch == '*' ) {
+				this.getProjectBranches( project, function ( err, branches ) {
+					if ( err ) {
+						console.error( 'Couldn\'t retrieve the list of branches for', repo, ', skipping.' );
+					}
+					else {
+						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
+							project.enter( branches[ i ] );
+							if ( project.isUsingRepo( repo ) ) {
+								ret[ project.getName() ] = project;
+							}
+							project.exit();
+						}
+					}
+					if ( --projectsLeft === 0 ) {
+						done( err );
+					}
+				} );
+				
 			}
-			project.exit();
+			else {
+				project.enter( branch );
+				if ( project.isUsingRepo( repo ) ) {
+					ret[ project.getName() ] = project;
+				}
+				project.exit();
+			}
 		}
-		return ret;
+
+		function done ( err ) {
+			callback( err, Object.values( ret ) );
+		}
+
+		done( null );
 	}
 
 	getTemplate ( name ) {
@@ -256,8 +312,12 @@ class Deploy extends HttpApp {
 			continue;
 			///
 			
+			let host = remote.splitFirst( '/' );
 			this.getHostApi( remote ).getRepos( function ( err, repos ) {
 				if ( err === null ) {
+					for ( var i = repos.length - 1; i >= 0; --i ) {
+						repos[ i ] = host.left + '/' + repos[ i ];
+					}
 					allrepos = allrepos.concat( repos );
 				}
 				remoteDone();

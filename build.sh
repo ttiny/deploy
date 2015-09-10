@@ -1,7 +1,7 @@
 #!/bin/bash
 if [[ $1 == 'debug' ]]; then
-	node-debug ./deploy.js sync bonotel master
+	CMD=node-debug
 else
-	# node ./deploy.js sync "*" "*"
-	node ./deploy.js sync bonotel "*"
+	CMD=node
 fi
+$CMD ./deploy.js clean ws2 "*"

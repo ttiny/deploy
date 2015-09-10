@@ -48,7 +48,7 @@ class Submodule {
 		
 		var src = Git.getFullRemote( this._remote );
 		var dest = Git.getFullRemote( repo );
-console.log(src,dest)
+
 		return src.repo == dest.repo && src.branch == dest.branch;
 	}
 

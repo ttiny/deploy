@@ -100,9 +100,16 @@ class Repo {
 		var src = Git.getFullRemote( this._remote );
 		var dest = Git.getFullRemote( repo );
 
-		if ( src.repo == dest.repo && src.branch == dest.branch ) {
+		if ( src.repo == dest.repo ) {
+
+			if ( src.branch === null ) {
+				src.branch = this._project.getVars().get( 'branch' );
+			}
+
+			if ( src.branch == dest.branch ) {
+				return true;
+			}
 			
-			return true;
 		}
 
 		var submodules = this._submodules;

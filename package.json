@@ -13,7 +13,7 @@
 		"Prototype": "https://github.com/perennials/prototype-js/tarball/1.3.0",
 		"Logging": "git+ssh://git@github.com/Perennials/logging-node.git",
 		"js-yaml": "3.4.x",
-		"github-api": "0.10.x"
+		"github": "0.2.x"
 	},
 	"devDependencies": {
 		"Unitest": "https://github.com/perennials/unitest-js/tarball/master"
