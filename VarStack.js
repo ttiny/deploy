@@ -53,6 +53,9 @@ class VarStack {
 			else if ( val instanceof Object ) {
 				val = val.toString( _this );
 			}
+			if ( String.isString( val ) && val != match ) {
+				val = _this.render( val );
+			}
 			return val;
 		} );
 	}

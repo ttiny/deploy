@@ -13,7 +13,7 @@ class Docker {
 	}
 
 	Build () {
-		var options = { stdio: 'inherit', cwd: this._local };
+		var options = { stdio: 'inherit' };
 		var args = [ 'build', '--force-rm', '-t', this._image ];
 		if ( this._file ) {
 			args.push( '-f', this._file );
@@ -24,7 +24,7 @@ class Docker {
 	}
 
 	Push () {
-		var options = { stdio: 'inherit', cwd: this._local };
+		var options = { stdio: 'inherit' };
 		var args = [ 'push', this._image ];
 		var ret = Docker.spawn( 'docker', args, options );
 		return ret.status === 0;

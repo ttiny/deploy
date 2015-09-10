@@ -16,7 +16,7 @@ projects:
     #  remote: github/Perennials/docker
     #  local: {project.local}
 
-    #docker: !iffile '!{project.local}/deploy.yml'
+    #docker: !yamlfifle '!{project.local}/deploy.yml'
 
     docker:
       - image: docker.perennial.int/supplier2
@@ -31,7 +31,11 @@ projects:
 
   ####
   bonotel:
-    extends: supplier  
+    extends: supplier
+
+    rocker-compose:
+      vars:
+        port: 20011
 
   ####
   ws2:
@@ -50,28 +54,29 @@ projects:
 
     vars:
       local: /apps/supplier/{project}/{branch}
+      config: /config/supplier/{project}/{branch}
+      config-common: /config/supplier/_common/{project.sdk-version}
+      sdk-version: !!js/function >
+        function ( global, require, vars ) {
+          try {
+            return require( 'fs' )
+              .readFileSync( vars.render( '{project.local}/supplier.php' ), 'utf8' )
+              .match( /providerkit-php\/([^\/]+)\/init.php/ )[ 1 ];
+          }
+          catch ( e ) {
+            // global.console.error( e );
+            // global.console.log( vars )
+            return 'master';
+          }
+        }
 
     ################### this should go in include only for dev
     #include: !iffile config/{project}.{env}.yml
     repo:
       remote: github/Perennials/supplier-{project}
       local: '{project.local}'
-      vars:
-        sdk-version: !!js/function >
-          function ( global, require, vars ) {
-            try {
-              return require( 'fs' )
-                .readFileSync( vars.render( '{project.local}/supplier.php' ), 'utf8' )
-                .match( /providerkit-php\/([^\/]+)\/init.php/ )[ 1 ];
-            }
-            catch ( e ) {
-              // global.console.error( e );
-              // global.console.log( vars )
-              return 'master';
-            }
-          }
       submodules:
-        github/Perennials/providerkit-php#{repo.sdk-version}: '{project.local}/lib/providerkit-php'
+        github/Perennials/providerkit-php#{project.sdk-version}: '{project.local}/lib/providerkit-php'
 
     docker:
       image: 'docker.perennial.int/{project}:{branch.tag}'
@@ -79,10 +84,12 @@ projects:
     ###################
 
     rocker-compose:
-      file: '{project.local}/docker'
+      path: '{project.config-common}'
       vars:
         env: '{env}'
         name: '{project}'
         version: '{branch}'
+        version_tag: '{branch.tag}'
+        version_flat: '{branch.flat}'
 
     
