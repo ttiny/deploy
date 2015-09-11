@@ -1,23 +1,20 @@
 {
 	"name": "deploy",
 	"description": "Git and Docker deployment tool",
-	"version": "1.0.0",
+	"version": "0.5.0",
 	"author": "Borislav Peev <borislav.asdf@gmail.com>",
 	"engine": [
 		"node >= 4.0.0"
 	],
-	"scripts": {
-		"test": "node ./tests/tests.js"
-	},
+	"main": "deploy.js",
 	"dependencies": {
 		"Prototype": "https://github.com/perennials/prototype-js/tarball/1.4.0",
-		"Logging": "git+ssh://git@github.com/Perennials/logging-node.git",
+		"App": "https://github.com/perennials/app-node/tarball/1.5.0",
 		"js-yaml": "3.4.x",
 		"github": "0.2.x",
-		"netmask": "1.0.x"
-	},
-	"devDependencies": {
-		"Unitest": "https://github.com/perennials/unitest-js/tarball/master"
+		"netmask": "1.0.x",
+		"shelljs": "0.5.x",
+		"markup-js": "https://github.com/adammark/Markup.js"
 	},
 	"repository": {
 		"type": "git",

@@ -2,12 +2,15 @@
 
 var HttpAppRequest = require( 'App/HttpAppRequest' );
 var ChildProcess = require( 'child_process' );
+var Url = require( 'url' );
 
 class DeployRequest extends HttpAppRequest {
 
 	constructor ( app, req, res ) {
 		super( app, req, res );
-		this._argv = req.url.split( '/' );
+		var url = Url.parse( req.url );
+		this._argv = url.pathname.split( '/' );
+		this._secret = url.query;
 		if ( this._argv[ 0 ] == '' ) {
 			this._argv.shift();
 		}
@@ -23,10 +26,6 @@ class DeployRequest extends HttpAppRequest {
 		if ( host === false && !this.knowsTheSecret() ) {
 			this.Response.end();
 			return;
-		}
-
-		if ( String.isString( this.App.SecretAccess ) && this.App.SecretAccess.length > 0 ) {
-			this._argv.shift();
 		}
 
 		var req = {};
@@ -110,7 +109,7 @@ class DeployRequest extends HttpAppRequest {
 		return this.App.SecretAccess == '' || (
 			String.isString( this.App.SecretAccess ) &&
 			this.App.SecretAccess.length > 0 &&
-			this._argv[ 0 ] == this.App.SecretAccess
+			this._secret == this.App.SecretAccess
 		);
 	}
 

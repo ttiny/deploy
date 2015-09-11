@@ -73,7 +73,7 @@ class Repo {
 		
 		this._submodules = [];
 
-		var submodules = yaml( data.submodules, vars );
+		var submodules = yaml( this._data.submodules, vars );
 		if ( submodules instanceof Object ) {
 			for ( var remote in submodules ) {
 				this._submodules.push( new Submodule(

@@ -1,7 +1,7 @@
 "use strict";
 
 var Yaml = require( 'js-yaml' );
-var YamlType = require( './YamlType' );
+var DeferredYaml = require( './Deferred' );
 var ChildProcess = require( 'child_process' );
 
 // if this is class and it extends this is undefined in the constructor with node 4.0.0
@@ -9,10 +9,10 @@ function Cmd ( data ) {
 	this._cmd = data;
 }
 
-Cmd.extend( YamlType, {
+Cmd.extend( DeferredYaml, {
 	
-	toString ( vars ) {
-		return ChildProcess.execSync( vars.render( this._cmd ), { stdio: 'inherit' } ).toString( 'utf8' );
+	resolve ( vars ) {
+		return ChildProcess.execSync( vars.render( this._cmd ), { stdio: 'pipe' } ).toString( 'utf8' );
 	}
 } );
 

@@ -18,6 +18,13 @@ global.yaml = function ( yaml, vars ) {
 }
 
 global.LoadYaml = function ( file ) {
+	if ( !Fs.existsSync( file ) ) {
+		return null;
+	}
 	var config = Fs.readFileSync( file, 'utf8' );
 	return Yaml.load( config, { filename: file, schema: Yaml.DEPLOY_SCHEMA } );
+}
+
+global.LoadYamlString = function ( str ) {
+	return Yaml.load( str, { schema: Yaml.DEPLOY_SCHEMA } );
 }

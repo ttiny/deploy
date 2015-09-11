@@ -1,6 +1,9 @@
 "use strict";
 
 var ChildProcess = require( 'child_process' );
+var Mark = require( 'markup-js' );
+var Fs = require( 'fs' );
+var Shelljs = require( 'shelljs' );
 
 class RockerCompose {
 
@@ -20,17 +23,33 @@ class RockerCompose {
 	}
 
 	_run ( cmd, argv ) {
-		var options = { stdio: 'inherit', cwd: this._path };
-		var args = [ cmd ];
-		if ( this._file ) {
-			args.push( '-f', this._file );
-		}
-		var vars = this._vars;
-		for ( var name in vars ) {
-			args.push( '-var', name + '=' + vars[ name ] );
+		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
+		var args = [ cmd, '-f', '-' ];
+		var options = { stdio: [ 'pipe', 'inherit', 'inherit' ], input: template, cwd: this._path };
+		if ( cmd == 'run' ) {
+			this._createVolumes( template );
 		}
 		var ret = RockerCompose.spawn( 'rocker-compose', args, options );
 		return ret.status === 0;
+	}
+
+	_createVolumes ( template ) {
+		var pod = yaml( LoadYamlString( template ), this._project.getVars() );
+		for ( var containerName in pod.containers ) {
+			var container = pod.containers[ containerName ];
+			var volumes = container.volumes;
+			if ( String.isString( volumes ) ) {
+				volumes = [ volumes ];
+			}
+			if ( volumes instanceof Array ) {
+				for ( var i = volumes.length - 1; i >= 0; --i ) {
+					var hostDir = volumes[ i ].splitFirst( ':' ).left;
+					if ( !Fs.existsSync( hostDir ) ) {
+						Shelljs.mkdir( '-p', hostDir );
+					}
+				}
+			}
+		}
 	}
 
 	enter () {

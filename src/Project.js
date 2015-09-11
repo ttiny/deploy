@@ -11,7 +11,7 @@ class Project {
 		this._app = app;
 		this._vars = vars;
 
-		if ( data.extends ) {
+		while ( yaml( data.extends, vars ) ) {
 			var tmpl = app.getTemplate( data.extends );
 			delete data.extends;
 			data = tmpl.mergeDeep( data );
@@ -83,7 +83,7 @@ class Project {
 
 	Run ( argv ) {
 		if ( this._rockerCompose === null ) {
-			throw new Error( 'Can not run a project (' + this._name + ') without "rocker-compose" configuration.' );
+			throw new Error( 'Can not run a project (' + this._name + ') without "pod" configuration.' );
 		}
 		this._rockerCompose.enter();
 		var ret = this._rockerCompose.Run( argv );
@@ -93,7 +93,7 @@ class Project {
 
 	Stop ( argv ) {
 		if ( this._rockerCompose === null ) {
-			throw new Error( 'Can not stop a project (' + this._name + ') without "rocker-compose" configuration.' );
+			throw new Error( 'Can not stop a project (' + this._name + ') without "pod" configuration.' );
 		}
 		this._rockerCompose.enter();
 		var ret = this._rockerCompose.Stop( argv );
@@ -151,8 +151,8 @@ class Project {
 			}
 		}
 		
-		if ( this._data[ 'rocker-compose' ] ) {
-			this._rockerCompose = new RockerCompose( this, yaml( this._data[ 'rocker-compose' ], vars ) );
+		if ( this._data.pod ) {
+			this._rockerCompose = new RockerCompose( this, yaml( this._data.pod, vars ) );
 		}
 	}
 
