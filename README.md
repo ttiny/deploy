@@ -34,15 +34,14 @@ GitLab on the way.
       - [Example](#example)
     - [Projects](#projects)
       - [Variables](#variables-1)
-      - [Example](#example-1)
       - [Repo configuration](#repo-configuration)
       - [Docker configuration](#docker-configuration)
       - [Pod configuration](#pod-configuration)
-  - [Examples](#examples)
+    - [Example](#example-1)
 - [CLI usage](#cli-usage)
   - [Project syntax](#project-syntax)
   - [Branch syntax](#branch-syntax)
-  - [Examples](#examples-1)
+  - [Examples](#examples)
   - [Git commands](#git-commands)
     - [Sync](#sync)
     - [Clean](#clean)
@@ -234,32 +233,6 @@ Variable | Description
 `{branch.tag}` | Name of the current branch according to Docker's convention. Put simply this will be `latest` for branch named `master`, otherwise will be the same as `{branch}`.
 `{branch.flat}` | Name of the current branch with all non-word and non-digit characters removed. E.g. for branch `1.1` this will be `11`.
 
-###### Example
-
-```yaml
-ws2:
-  ## sync only the master branch or two digit semver branches like 1.1
-  branches: [ 'master', !!js/regexp '^\d+\.\d+$' ]
-  extends: base
-  repo:
-    ### will sync from this repo
-    remote: github/Perennials/ws2
-    ### to this local directory
-    local: '{project.local}'
-  
-  docker:
-    ### name of docker image
-    image: perennial.custom.registry/{project}:{branch}
-    ### path for building the image
-    path: '{project.local}'
-    ### Dockerfile relative to the path
-    file: docker/Dockerfile
-
-base:
-  template: true
-  vars:
-    project.local: /apps/{project}/{branch}
-```
 
 ##### Repo configuration
 This configuration is mandatory for the [git commands](#git-commands).
@@ -322,9 +295,33 @@ Property | Value type | Description
 `pod.vars` | mapping | A set of variables to be substituted inside the pod definition file according to the rules of [Markup.js](https://github.com/adammark/Markup.js).
 
 
-### Examples
+#### Example
+For more examples check the [examples folder](https://github.com/Perennials/deploy/tree/master/examples). Start with `local.yml` in each folder.
 
-Check the [examples folder](https://github.com/Perennials/deploy/tree/master/examples). Check `local.yml` in each folder.
+```yaml
+ws2:
+  ## sync only the master branch or two digit semver branches like 1.1
+  branches: [ 'master', !!js/regexp '^\d+\.\d+$' ]
+  extends: base
+  repo:
+    ### will sync from this repo
+    remote: github/Perennials/ws2
+    ### to this local directory
+    local: '{project.local}'
+  
+  docker:
+    ### name of docker image
+    image: perennial.custom.registry/{project}:{branch}
+    ### path for building the image
+    path: '{project.local}'
+    ### Dockerfile relative to the path
+    file: docker/Dockerfile
+
+base:
+  template: true
+  vars:
+    project.local: /apps/{project}/{branch}
+```
 
 
 CLI usage
