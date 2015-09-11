@@ -521,6 +521,8 @@ TODO
 - `*` for project or branch will not work without `repo` configuration. This
   means it can not be used for `docker` or `pod` without `repo`.
 - Would be nice to be able to configure the path to rocker-compose.
+- Add install instructions for running from Docker.
+
 
 Authors
 -------
