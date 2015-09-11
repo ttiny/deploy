@@ -202,10 +202,10 @@ Property | Value type | Description
 `projects.name` | string | `name` here is the actual name of the project.
 `projects.name.extends` | string | A template to use for the base of this project. The properties of this project will be merged recursively with the template.
 `projects.name.template` | `true` | Indicates the project is a template to be used for base of other projects and should be excluded of normal project treatment.
-`projects.name.branches` | string|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
+`projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
 `projects.name.repo` | mapping | Repo configuration for the project. [See bellow](#repo-configuration).
-`projects.name.docker` | mapping|mapping[] | Docker configuration for the project. [See bellow](#docker-configuration).
+`projects.name.docker` | mapping\|mapping[] | Docker configuration for the project. [See bellow](#docker-configuration).
 `projects.name.pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
 
 ###### Variables
