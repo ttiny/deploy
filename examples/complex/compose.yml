@@ -1,0 +1,36 @@
+# this file is for rocker-compose but with Markup.js templates.
+# check https://github.com/grammarly/rocker-compose
+# and https://github.com/adammark/Markup.js for more info
+namespace: {{name}}
+containers:
+
+  src:
+    image: myorg/{{name}}:{{version}}
+    volumes:
+      - /volume/foo/{{name}}/{{version}}/log:/app/store/log
+      - /config/foo/{{name}}/{{version}}:/app/config
+      # if this is a dev environment use local directory for sources
+      {{if env|equals>dev}}
+      - /apps/foo/{{name}}/{{version}}:/app
+      {{/if}}
+
+  php:
+    image: myorg/php:5.4
+    volumes_from:
+      - src
+    volumes:
+      - /volume/foo/{{name}}/{{version}}/php:/volume/php/log
+    env:
+      cfg.app.name: {{name}}{{version_flat}}
+      cfg.app.version: {{version}}
+      cfg.app.instance: ''
+
+  nginx:
+    image: myorg/nginx:1.9
+    volumes_from:
+      - src
+      - php
+    volumes:
+      - /volume/foo/{{name}}/{{version}}/nginx:/volume/nginx/log
+    ports:
+      - {{port}}:80

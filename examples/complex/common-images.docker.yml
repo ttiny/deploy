@@ -1,0 +1,6 @@
+- image: myorg/selfie:latest
+  path: git@github.com:myorg/common-images#:/selfie
+- image: myorg/php:5.4
+  path: git@github.com:myorg/common-images#:/php
+- image: myorg/nginx:1.9
+  path: git@github.com:myorg/common-images#:/nginx

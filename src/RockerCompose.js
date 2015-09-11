@@ -22,6 +22,10 @@ class RockerCompose {
 		return this._run( 'rm', argv );
 	}
 
+	Clean ( argv ) {
+		return this._run( 'clean', argv );
+	}
+
 	_run ( cmd, argv ) {
 		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
 		var args = [ cmd, '-f', '-' ];

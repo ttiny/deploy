@@ -36,6 +36,17 @@ class Docker {
 		return ret.status === 0;
 	}
 
+	Clean ( argv ) {
+		var options = { stdio: 'inherit' };
+		var args = [ 'rmi' ];
+		if ( argv.force ) {
+			args.push( '-f' )
+		}
+		args.push( this._image );
+		var ret = Docker.spawn( 'docker', args, options );
+		return ret.status === 0;
+	}
+
 	enter () {
 
 		var vars = this._project.getVars();

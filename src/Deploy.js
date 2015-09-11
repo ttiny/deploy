@@ -6,6 +6,7 @@ var DeployRequest = require( './DeployRequest' );
 var Project = require( './Project' );
 var VarStack = require( './VarStack' );
 var Netmask = require( 'netmask' ).Netmask;
+var Path = require( 'path' );
 
 require( './YamlHelpers' );
 
@@ -186,8 +187,8 @@ class Deploy extends HttpApp {
 			yaml.mergeDeep( localYaml );
 		}
 		
-
 		// get top level vars
+		this._vars.set( 'deploy.root', Path.dirname( __dirname ) );
 		var vars = yaml.vars;
 		if ( vars instanceof Object ) {
 			for ( var name in vars ) {

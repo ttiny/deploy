@@ -11,6 +11,12 @@ The tool performs three functions (not necessarily all of them):
 3. [Runs](#pod-commands) Docker container pods (currently with
    [rocker-compose](https://github.com/grammarly/rocker-compose)).
 
+**deploy** is meant to be used in an dev-staging-production environment, where
+the dev environment will sync application sources in response to git webhook.
+From these sources Docker images would be built and and pushed to a registry
+and finally the images can be deployed, without sources outside the containers
+and staging and production.
+
 All functionality is available via CLI or REST interface and the REST server
 also handles webhooks. Currently the webhooks from GitHub are supported with
 GitLab on the way.
@@ -19,36 +25,37 @@ GitLab on the way.
 
 - [Installation](#installation)
 - [Configuration](#configuration)
-	- [HTTP configuration](#http-configuration)
-	- [Git authentication](#git-authentication)
-		- [Credentials configuration](#credentials-configuration)
-			- [GitHub](#github)
-	- [Project configuration](#project-configuration)
-		- [Variables](#variables)
-			- [Example](#example)
-		- [Projects](#projects)
-			- [Variables](#variables-1)
-			- [Example](#example-1)
-			- [Repo configuration](#repo-configuration)
-			- [Docker configuration](#docker-configuration)
-			- [Pod configuration](#pod-configuration)
-	- [Examples](#examples)
+  - [HTTP configuration](#http-configuration)
+  - [Git authentication](#git-authentication)
+    - [Credentials configuration](#credentials-configuration)
+      - [GitHub](#github)
+  - [Project configuration](#project-configuration)
+    - [Variables](#variables)
+      - [Example](#example)
+    - [Projects](#projects)
+      - [Variables](#variables-1)
+      - [Example](#example-1)
+      - [Repo configuration](#repo-configuration)
+      - [Docker configuration](#docker-configuration)
+      - [Pod configuration](#pod-configuration)
+  - [Examples](#examples)
 - [CLI usage](#cli-usage)
-	- [Project syntax](#project-syntax)
-	- [Branch syntax](#branch-syntax)
-	- [Examples](#examples-1)
-	- [Git commands](#git-commands)
-		- [Sync](#sync)
-		- [Clean](#clean)
-	- [Docker commands](#docker-commands)
-		- [Build](#build)
-		- [Push](#push)
-	- [Pod commands](#pod-commands)
-		- [Run](#run)
-		- [Stop](#stop)
+  - [Project syntax](#project-syntax)
+  - [Branch syntax](#branch-syntax)
+  - [Examples](#examples-1)
+  - [Git commands](#git-commands)
+    - [Sync](#sync)
+    - [Clean](#clean)
+  - [Docker commands](#docker-commands)
+    - [Build](#build)
+    - [Push](#push)
+  - [Remove images](#remove-images)
+  - [Pod commands](#pod-commands)
+    - [Run](#run)
+    - [Stop](#stop)
 - [REST usage](#rest-usage)
-	- [REST syntax](#rest-syntax)
-	- [Webhooks](#webhooks)
+  - [REST syntax](#rest-syntax)
+  - [Webhooks](#webhooks)
 - [TODO](#todo)
 - [Authors](#authors)
 
@@ -61,11 +68,12 @@ Installation
 You need Node.js >= 4.0.0. If you don't have it you don't need to install it system wide. You can just download the
 archive, extract it somewhere and use the `node` and `npm` commands from the `bin` directory there.
 
-
 1. Download the contents of this repo either from the zip button or from the releases section.
 2. Extract somewhere, open a shell and cd to that directory.
 3. Start `npm install` to install all dependencies in the current directory.
 4. Now you can start the app with `node deploy.js` or the `deploy` shell script.
+
+Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
 
 
 Configuration
@@ -167,6 +175,13 @@ should be quoted to disambiguate the YAML mapping syntax.
 vars:
   name: value
 ```
+
+The following global variables will be predefined.
+
+Variable | Description
+---- | ----
+`{deploy.root}` | The root directory where the application itself resides.
+
 
 ##### Example
 ```yaml
@@ -309,6 +324,8 @@ Property | Value type | Description
 
 ### Examples
 
+Check the [examples folder](https://github.com/Perennials/deploy/tree/master/examples). Check `local.yml` in each folder.
+
 
 CLI usage
 ---------
@@ -387,9 +404,10 @@ deploy sync <project> <branch>
 
 #### Clean
 The command will remove all local repositories for the project **without backup or confirmation.**
+If the `-rmi` flag is passed it will also remove the Docker images.
 
 ```sh
-deploy clean <project> <branch>
+deploy clean <project> <branch> [-rmi [-force]]
 ```
 
 
@@ -409,6 +427,14 @@ The command will push the Docker image(s) for the specified project and branch.
 ```sh
 deploy push <project> <branch>
 ```
+
+### Remove images
+The command will remove the Docker image(s) for the specified project and branch.
+
+```sh
+deploy rmi <project> <branch> [-force]
+```
+
 
 ### Pod commands
 Pod commands can be performed only on projects with [pod configuration](#pod-configuration).
@@ -494,9 +520,7 @@ TODO
   of this sort.
 - `*` for project or branch will not work without `repo` configuration. This
   means it can not be used for `docker` or `pod` without `repo`.
-- Add rmi command to remove clean the docker images?
-- Clean should also perform clean with rocker-compose?
-
+- Would be nice to be able to configure the path to rocker-compose.
 
 Authors
 -------

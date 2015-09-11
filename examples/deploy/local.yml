@@ -1,0 +1,56 @@
+### this is a working example
+
+### 1. install deploy, copy this file to the config directory
+
+### 2. start ./deploy sync deploy master
+### now you should have copy of deploy in deploy/examples/download
+
+### 3. start ./deploy build deploy master
+### at this point you should see perennial/deploy:master in docker images
+### lets tell the newly downloaded deploy to accept secret access
+### edit deploy/examples/download/config.yml and uncomment the line secret-access: 'itsme'
+
+### 4. start ./deploy run deploy master
+### at this point you should see deploy.app in docker projects
+### now we can try if deploy is working. if you open docker_host:1337/deploy/asd/qwe you should get 404.
+### but if you provide secret access, docker_host:1337/deploy/asd/qwe?itsme, you should see something
+### it means deploy is not valid action
+
+### 5. ok, time to go. stop and clean up ./deploy stop,clean deploy master -rmi
+
+secret-access: itsme
+
+vars:
+  env: dev
+  deploy.example: '{deploy.root}/examples/deploy'
+
+projects:
+
+  deploy:
+    branches: master
+    
+    vars:
+      # using a global var here to make a project var
+      local: '{deploy.example}/download'
+      apps: '{deploy.example}/download/apps'
+    
+    repo:
+      remote: github/Perennials/deploy
+      # using the project variable, it will have project. prefix
+      local: '{project.local}'
+
+    docker:
+      image: perennial/deploy:{branch}
+      # start from the root
+      path: '{deploy.root}'
+      # but use custom Dockerfile
+      file: 'docker/Dockerfile'
+
+    pod:
+      path: '{deploy.example}'
+      vars:
+        env: '{env}'
+        apps: '{project.apps}'
+        root: '{project.local}'
+        branch: '{branch}'
+        port: 1337

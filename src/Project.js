@@ -20,7 +20,7 @@ class Project {
 		this._name = data.name;
 		this._repo = null;
 		this._docker = null;
-		this._rockerCompose = null;
+		this._pod = null;
 		this._branches = null;
 
 	}
@@ -36,12 +36,37 @@ class Project {
 	}
 
 	Clean ( argv ) {
-		if ( this._repo === null ) {
-			throw new Error( 'Can not sync a project (' + this._name + ') without git "repo" configuration.' );
+		if ( this._repo ) {
+			this._repo.enter();
+			var ret = this._repo.Clean( argv );
+			this._repo.exit();
 		}
-		this._repo.enter();
-		var ret = this._repo.Clean( argv );
-		this._repo.exit();
+		if ( this._pod ) {
+			this._pod.enter();
+			var ret = this._pod.Clean( argv );
+			this._pod.exit();
+		}
+		if ( argv.rmi ) {
+			this.Rmi( argv );
+		}
+		return ret;
+	}
+
+	Rmi ( argv ) {
+		if ( this._docker === null ) {
+			throw new Error( 'Can not remove images for a project (' + this._name + ') without "docker" configuration.' );
+		}
+		var ret = false;
+		var dockers = this._docker;
+		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
+			var docker = dockers[ i ];
+			docker.enter();
+			ret = docker.Clean( argv );
+			docker.exit();
+			if ( !ret ) {
+				return ret;
+			}
+		}
 		return ret;
 	}
 
@@ -82,22 +107,22 @@ class Project {
 	}
 
 	Run ( argv ) {
-		if ( this._rockerCompose === null ) {
+		if ( this._pod === null ) {
 			throw new Error( 'Can not run a project (' + this._name + ') without "pod" configuration.' );
 		}
-		this._rockerCompose.enter();
-		var ret = this._rockerCompose.Run( argv );
-		this._rockerCompose.exit();
+		this._pod.enter();
+		var ret = this._pod.Run( argv );
+		this._pod.exit();
 		return ret;
 	}
 
 	Stop ( argv ) {
-		if ( this._rockerCompose === null ) {
+		if ( this._pod === null ) {
 			throw new Error( 'Can not stop a project (' + this._name + ') without "pod" configuration.' );
 		}
-		this._rockerCompose.enter();
-		var ret = this._rockerCompose.Stop( argv );
-		this._rockerCompose.exit();
+		this._pod.enter();
+		var ret = this._pod.Stop( argv );
+		this._pod.exit();
 		return ret;
 	}
 
@@ -152,7 +177,7 @@ class Project {
 		}
 		
 		if ( this._data.pod ) {
-			this._rockerCompose = new RockerCompose( this, yaml( this._data.pod, vars ) );
+			this._pod = new RockerCompose( this, yaml( this._data.pod, vars ) );
 		}
 	}
 
