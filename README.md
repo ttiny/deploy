@@ -17,8 +17,8 @@ The tool performs three functions (not necessarily all of them):
 **deploy** is meant to be used in an dev-staging-production environment, where
 the dev environment will sync application sources in response to git webhook.
 From these sources Docker images would be built and and pushed to a registry
-and finally the images can be deployed, without sources outside the containers
-and staging and production.
+and finally the images can be deployed, without sources outside the containers,
+to staging and production.
 
 All functionality is available via CLI or REST interface and the REST server
 also handles webhooks. Currently the webhooks from GitHub are supported with
