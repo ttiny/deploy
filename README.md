@@ -2,6 +2,9 @@ Deploy
 ======
 A Node.js tool for git and Docker deployments.
 
+_The project is in pre-release state and is still being shaped by using it and
+finding better ways to do so in our environment._
+
 The tool performs three functions (not necessarily all of them):
 
 1. [Synchronizes](#git-commands) local git repositori(es), possibly triggered
@@ -75,7 +78,7 @@ archive, extract it somewhere and use the `node` and `npm` commands from the `bi
 2. Put your private SSH key `id_rsa` (if you need one) and your **deploy** config
    `local.yml` in `/myconfig`.
 3. Make some dir where you will sync your projects, e.g. `/myapps`, it needs
-   to be accessible inside the container, as well as all others you will need.
+   to be accessible inside the container, as well as all other dirs referenced in your config.
 4. Use from the CLI like `docker run --rm -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master deploy sync "*" "*"`. The last three arguments is the actual deploy command, you can change it.
 5. Or start an HTTP server `docker run --rm -p 80:80 -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master`.
 6. Now you can use the REST interface to trigger commands or receive webhooks.
@@ -103,7 +106,7 @@ which enable specifying JavaScript regular expressions and functions inside the 
 **deploy** has several custom types of itself. All of these can be used anywhere and will
 be evaluated only when they are need. For example using a `!!js/function` for the value of
 a variable, will evaluate the function only when the variable need to be substituted in a
-give context. The custom types provided by **deploy** are:
+given context. The custom types provided by **deploy** are:
 
 Property | Description
 ---- | ----
@@ -149,13 +152,15 @@ Git commands require `git` to be installed and properly configured with SSH
 key (if you plan to use private repositories). For more information check the
 [tutorial on GitHub](https://help.github.com/articles/generating-ssh-keys/).
 
-Additionally, to be able to perform bulk commands, that is commands on multiple
-projects or branches, **deploy** will try to use the web APIs to determine the
-available repositories and/or branches. For this to work `credentials` configuration
-must be supplied.
+Additionally, to be able to perform bulk commands, that is commands on
+multiple branches, depending on your configuration **deploy** may need to use
+the web APIs to determine the available branches. For this to work
+`credentials` configuration must be supplied.
 
 #### Credentials configuration
-It is not mandatory, but without it you will not be able to execute commands like `deploy sync "*"" "*"`.
+It is not mandatory, but without it you will not be able to execute commands
+like `deploy sync myproject "*"`, or it will work only for manually defined
+branches.
 
 ##### GitHub
 You can authenticate for GitHub either with your username and password or with [access token](https://help.github.com/articles/creating-an-access-token-for-command-line-use/). If both are supplied `token` will be preferred. You can give multiple authentications for different users or organisations.
@@ -171,7 +176,7 @@ credentials:
 
 Property | Description
 ---- | ----
-`credentials.github.user` | Replace `user` with the actual GitHub user or organisation who's repositories these credentials will grant access to. It does not need to be the same as the `username`. Case sensitive, must match the repo configuration, e.g. for repo `github/Perennials/deploy` the user here should be `Perennials`.
+`credentials.github.user` | Replace `user` with the actual GitHub user or organisation who's repositories these credentials will grant access to. It does not need to be the same as the `username`. Case sensitive, must match the repo configuration, e.g. for repo `github/Perennials/deploy` the user here should be `Perennials`, but the `username` may be any user with access to the repo.
 
 
 ### Project configuration
@@ -199,9 +204,19 @@ Variable | Description
 ##### Example
 ```yaml
 vars:
+  
+  # defines a global variable named env with value dev
   env: dev
+
+  # reference to the variable {env} inside another value, will be replaced with dev
   apps.root: /{env}/apps/
+
+  # custom elements, this will execute the command id when this variable is substitued
   username: !cmd id -u -n
+  
+  # if we don't use the quotes here YAML will interpret it as mapping
+  # this will likely lead to errors
+  env.ref: '{env}' 
 ```
 
 #### Projects
@@ -238,7 +253,7 @@ Property | Value type | Description
 
 ###### Variables
 
-Besides the global variables defined in the root of the configuration, the following variables will available in the scope of the project.
+Besides the [global variables](#variables) defined in the root of the configuration, the following variables will available in the scope of the project.
 
 Variable | Description
 ---- | ----
@@ -358,7 +373,7 @@ perform the command on all projects related to this repository. Notice the host
 is not `github.com` but just lowercase `github`. This is the format used
 everywhere throughout the configuration.
 
-Passing `*` will will perform the command on all projects.
+Passing `*` will perform the command on all projects.
 
 #### Branch syntax
 The branch can be given as as literal name or `*`.
@@ -473,7 +488,7 @@ deploy
 ### REST syntax
 
 ```
-http://myserver.com/<action>[/project[/branch]][?secret=secret-access]
+http://myserver.com/<action>[/project[/branch]][?secret=secret-access[&flag]..]
 ```
 
 The syntax for `action`, `project` and `branch` is the same in the CLI interface, with the
@@ -485,7 +500,7 @@ http://myserver.com/sync/myproject/master
 ```
 
 ```
-http://myserver.com/clean,sync/myproject/*
+http://myserver.com/clean,sync/myproject/*?rmi&force
 ```
 
 ### Webhooks
@@ -496,10 +511,11 @@ Use URL like this for the webhook configuration:
 http://myserver.com/deploy
 ```
 
-Just pass any REST URL as webhook. This is actually the REST URL for the
-`deploy` command. The `deploy` command means to detect the command from the
-webhook payload. In other words it will perform either `sync` or `clean`
-depending if you push something in the branch or delete the branch.
+Or just pass any REST URL as webhook. This is actually the REST URL for the
+`deploy` command. The `deploy` command has special purpose and is only
+available for webhooks. It means to detect the command from the webhook
+payload. In other words it will perform either `sync` or `clean` depending if
+you push something in the branch or delete the branch.
 
 With this syntax the project and the branch will also be auto detected from
 the webhook payload.
@@ -509,7 +525,7 @@ the project or the branch is omitted it will be auto detected from the
 payload. For example:
 
 ```
-http://myserver.com/sync/myproject/master
+http://myserver.com/sync/myproject/master?secret=itsme
 ```
 
 
@@ -522,7 +538,6 @@ TODO
 - Be able to do things for projects/repos like events: pre-sync, post-sync,
   pre-clone, post-clone, pre-clean, post-clone, error, success, or something
   of this sort.
-- Would be nice to be able to configure the path to rocker-compose.
 - Logging the HTTP stuff to files.
 
 
