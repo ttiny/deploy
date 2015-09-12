@@ -13,7 +13,7 @@ class Docker {
 	}
 
 	Build ( argv ) {
-		var options = { stdio: 'inherit' };
+		var options = { stdio: 'inherit', cwd: this._path };
 		var args = [ 'build', '--force-rm', '-t', this._image ];
 		if ( this._file ) {
 			args.push( '-f', this._file );
@@ -24,7 +24,7 @@ class Docker {
 		if ( argv[ 'pull' ] ) {
 			args.push( '--pull' );
 		}
-		args.push( this._path );
+		args.push( '.' );
 		var ret = Docker.spawn( 'docker', args, options );
 		return ret.status === 0;
 	}

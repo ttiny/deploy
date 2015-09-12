@@ -3,7 +3,8 @@ bundled for usage with github.com and bitbucket.org, it only needs a config
 and a optionally a private key.
 
 ```sh
-docker build -t perennial/deploy:master .
+### from the root of the deploy folder
+docker build -t perennial/deploy:master -f docker/Dockerfile .
 ```
 
 

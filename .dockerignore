@@ -1,1 +1,10 @@
 .*
+debug
+config
+docker
+thirdparty
+examples
+
+!docker/deploy.sh
+!docker/known_hosts
+!thirdparty/rocker-compose/rocker-compose-*linux*

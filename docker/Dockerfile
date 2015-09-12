@@ -1,15 +1,23 @@
 FROM node:4.0
 MAINTAINER Borislav Peev (borislav.asdf at gmail dot com)
 
-RUN curl -SL https://github.com/grammarly/rocker-compose/releases/download/0.1.0/rocker-compose-0.1.0_linux_amd64.tar.gz | \
-    tar -xjC /usr/local/bin && \
-    chmod +x /usr/local/bin/rocker-compose
-
 COPY . /app
 
-WORKDIR /app
+# install our local rocker-compose copy
+RUN tar -xjC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-0.1.0_linux_amd64.tar.gz && \
+    chmod +x /usr/local/bin/rocker-compose
 
-RUN npm install
+# this is neede to install docker from https
+RUN apt-get update && \
+    apt-get install apt-transport-https -y
+
+# install docker which will use the host docker socket
+RUN apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+RUN echo "deb https://apt.dockerproject.org/repo debian-jessie main" >> /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install docker-engine -y
+
+WORKDIR /app
 
 VOLUME /app/config
 VOLUME /app/log
@@ -17,9 +25,12 @@ VOLUME /app/log
 # predefined known_hosts for github and bitbucket
 RUN mkdir -p /root/.ssh
 COPY docker/known_hosts /root/.ssh/
+COPY docker/deploy.sh /deploy
 
-COPY docker/deploy.sh /
+# clean unneeded stuff
+RUN rm -rf /app/docker /app/thirdparty
+RUN ln -sf /deploy /usr/local/bin/deploy
 
 EXPOSE 80
 
-CMD [ "/deploy.sh" ]
+CMD [ "/deploy" ]

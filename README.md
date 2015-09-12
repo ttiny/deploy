@@ -24,6 +24,8 @@ GitLab on the way.
 <!-- MarkdownTOC -->
 
 - [Installation](#installation)
+  - [Docker](#docker)
+  - [Native](#native)
 - [Configuration](#configuration)
   - [HTTP configuration](#http-configuration)
   - [Git authentication](#git-authentication)
@@ -67,10 +69,22 @@ Installation
 You need Node.js >= 4.0.0. If you don't have it you don't need to install it system wide. You can just download the
 archive, extract it somewhere and use the `node` and `npm` commands from the `bin` directory there.
 
+### Docker
+
+1. Make some empty dir, e.g. `/myconfig`.
+2. Put your private SSH key `id_rsa` (if you need one) and your **deploy** config
+   `local.yml` in `/myconfig`.
+3. Make some dir where you will sync your projects, e.g. `/myapps`, it needs
+   to be accessible inside the container, as well as all others you will need.
+4. Use from the CLI like `docker run --rm -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master deploy sync "*" "*"`. The last three arguments is the actual deploy command, you can change it.
+5. Or start an HTTP server `docker run --rm -p 80:80 -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master`.
+6. Now you can use the REST interface to trigger commands or receive webhooks.
+
+### Native
+
 1. Download the contents of this repo either from the zip button or from the releases section.
 2. Extract somewhere, open a shell and cd to that directory.
-3. Start `npm install` to install all dependencies in the current directory.
-4. Now you can start the app with `node deploy.js` or the `deploy` shell script.
+4. You can start the app with `node deploy.js` or the `deploy` shell script.
 
 Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
 
@@ -459,7 +473,7 @@ deploy
 ### REST syntax
 
 ```
-http://myserver.com/<action>[/project[/branch]][?secret-access]
+http://myserver.com/<action>[/project[/branch]][?secret=secret-access]
 ```
 
 The syntax for `action`, `project` and `branch` is the same in the CLI interface, with the
@@ -509,7 +523,7 @@ TODO
   pre-clone, post-clone, pre-clean, post-clone, error, success, or something
   of this sort.
 - Would be nice to be able to configure the path to rocker-compose.
-- Add install instructions for running from Docker.
+- Logging the HTTP stuff to files.
 
 
 Authors

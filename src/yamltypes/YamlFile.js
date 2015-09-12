@@ -4,12 +4,13 @@ var Yaml = require( 'js-yaml' );
 var DeferredYaml = require( './Deferred' );
 var Fs = require( 'fs' );
 
-// if this is class and it extends this is undefined in the constructor with node 4.0.0
-function YamlFile ( data ) {
-	this._file = data;
-}
+class YamlFile extends DeferredYaml {	
+	
+	constructor ( data ) {
+		super();
+		this._file = data;
+	}
 
-YamlFile.extend( DeferredYaml, {	
 	resolve ( vars ) {
 		var file = vars.render( this._file );
 		if ( Fs.existsSync( file ) ) {
@@ -17,7 +18,7 @@ YamlFile.extend( DeferredYaml, {
 		}
 		return null;
 	}
-} );
+}
 
 module.exports = new Yaml.Type( '!yamlfile', {
 	

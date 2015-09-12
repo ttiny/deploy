@@ -63,7 +63,7 @@ class RockerCompose {
 
 		this._path = vars.render( yaml( this._data.path, vars ) );
 		if ( this._data.file ) {
-			this._file = vars.render( yaml( this._data.file, vars ) );
+			this._file = this._path + '/' + vars.render( yaml( this._data.file, vars ) );
 		}
 		else {
 			this._file = this._path + '/compose.yml';

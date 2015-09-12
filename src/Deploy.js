@@ -15,8 +15,13 @@ class Deploy extends HttpApp {
 	constructor () {
 
 		var yaml = LoadYaml( __dirname + '/../config.yml' );
+		var localYaml = LoadYaml( __dirname + '/../config/local.yml' );
+		if ( localYaml instanceof Object ) {
+			yaml.mergeDeep( localYaml );
+		}
 
 		super( DeployRequest, yaml.http.host, yaml.http.port );
+		this._yaml = yaml;
 		
 		var argv = this.getArgv();
 		if ( argv === null ) {
@@ -41,15 +46,16 @@ class Deploy extends HttpApp {
 		this.startListening();
 	}
 	
-	doCli ( yaml ) {
+	doCli () {
 		this._vars = null;
 		this._projects = null;
 		this._templates = null;
 		this._credentials = null;
 
 		
-		this.reloadConfig( yaml );
+		this.loadConfig();
 
+		process.exitCode = 1;
 		var argv = this.getArgv();
 		if ( argv === null ||
 		    !String.isString( argv[ 0 ] ) ||
@@ -64,13 +70,13 @@ class Deploy extends HttpApp {
 		var actions = argv[ 0 ].split( ',' );
 		for ( var i = actions.length - 1; i >= 0; --i ) {
 			if ( !this.isValidAction( actions[ i ] ) ) {
-				
 				this.printUsage();
 				this.close();
 				return;
 			}
 		}
 
+		process.exitCode = 0;
 		for ( var i = 0, iend = actions.length; i < iend; ++i ) {
 			this.doAction( actions[ i ], argv[ 1 ], argv[ 2 ] );
 		}
@@ -93,6 +99,7 @@ class Deploy extends HttpApp {
 			console.log( 'All good.' )
 		}
 		else {
+			process.exitCode = 1;
 			//todo: mail someone
 		}
 		console.log( '\n' );
@@ -172,16 +179,13 @@ class Deploy extends HttpApp {
 		console.log( 'dpl <action[,action]..> <project> <branch>' );
 	}
 
-	reloadConfig ( yaml ) {
+	loadConfig () {
 		this._vars = new VarStack;
 		this._projects = {};
 		this._templates = {};
 		this._credentials = {};
 
-		var localYaml = LoadYaml( __dirname + '/../config/local.yml' );
-		if ( localYaml instanceof Object ) {
-			yaml.mergeDeep( localYaml );
-		}
+		var yaml = this._yaml;
 		
 		// get top level vars
 		this._vars.set( 'deploy.root', Path.dirname( __dirname ) );

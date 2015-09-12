@@ -8,4 +8,4 @@ if [[ -f /app/config/id_rsa ]]; then
 fi
 
 # listen for deploy requests
-node /app/deploy.js
+exec node /app/deploy.js "$@"
