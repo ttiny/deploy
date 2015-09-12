@@ -185,28 +185,33 @@ class Deploy extends HttpApp {
 		this._templates = {};
 		this._credentials = {};
 
-		var yaml = this._yaml;
-		
 		// get top level vars
 		this._vars.set( 'deploy.root', Path.dirname( __dirname ) );
-		var vars = yaml.vars;
+		var vars = this._yaml.vars;
 		if ( vars instanceof Object ) {
 			for ( var name in vars ) {
 				this._vars.set( name, this._vars.render( vars[ name ] ) );
 			}
 		}
+		if ( this._vars.get( 'debug' ) === true ) {
+			this._vars.print();
+		}
 
 		// build projects list
-		var projects = yaml.projects;
+		var projects = yaml( this._yaml.projects, this._vars) ;
 		if ( projects instanceof Object ) {
 
 			// load the templates
 			for ( var name in projects ) {
-				var project = projects[ name ];
+				var project = yaml( projects[ name ], this._vars );
 				if ( project.template ) {
 					this._templates[ name ] = project;
 					delete project.template;
 					delete projects[ name ];
+				}
+				else {
+					// if the value was different after yaml()
+					projects[ name ] = project;
 				}
 			}
 
@@ -218,14 +223,14 @@ class Deploy extends HttpApp {
 			}
 		}
 
-		var credentials = yaml.credentials;
+		var credentials = yaml( this._yaml.credentials, this._vars );
 		if ( credentials instanceof Object ) {
 			for ( var host in credentials ) {
-				var users = credentials[ host ];
+				var users = yaml( credentials[ host ], this._vars );
 				for ( var user in users ) {
 					var name = host + '/' + user;
 					var HostApi = require( './host/' + host.toFirstUpperCase() );
-					this._credentials[ name ] = new HostApi( user, users[ user ]  );
+					this._credentials[ name ] = new HostApi( user, yaml( users[ user ], this._vars ) );
 				}
 			}
 		}

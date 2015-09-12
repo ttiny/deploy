@@ -8,6 +8,20 @@ class VarStack {
 		this._vars = [];
 	}
 
+	print () {
+		var vars = this._vars;
+		console.log( 'Vars:', '\n-----' )
+		for ( var i = 0, iend = vars.length; i < iend; ++i ) {
+			var v = vars[ i ];
+			if ( v.value instanceof Object ) {
+				console.log( v.name, '= >', '\n', v.value, '\n', this.render( yaml( v.value, this ) ), '\n^^^' );
+			}
+			else {
+				console.log( v.name, '=', this.render( yaml( v.value, this ) ) );
+			}
+		}
+	}
+
 	push ( name ) {
 		this._levels.push( this._vars.length );
 	}

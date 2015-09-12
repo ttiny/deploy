@@ -112,6 +112,7 @@ Property | Description
 ---- | ----
 `!cmd command` | Will execute a command and use its output as a value.
 `!yamlfile file` | Will parse a YAML file and incorporate its contents in the document.
+`!yamlfiles pattern` | Will parse all YAML matching the pattern and incorporate its contents in the document. If all files contain mappings the return value will be a a merged mapping, otherwise an array of all the value.
 `!textfile file` | Will read a file as a plain text and use it as a value.
 
 
@@ -538,6 +539,7 @@ TODO
 - Be able to do things for projects/repos like events: pre-sync, post-sync,
   pre-clone, post-clone, pre-clean, post-clone, error, success, or something
   of this sort.
+- Support multiple secret access strings and print the one used in the logs.
 - Logging the HTTP stuff to files.
 
 

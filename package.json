@@ -14,7 +14,8 @@
 		"github": "0.2.x",
 		"netmask": "1.0.x",
 		"shelljs": "0.5.x",
-		"markup-js": "https://github.com/adammark/Markup.js"
+		"markup-js": "https://github.com/adammark/Markup.js",
+		"glob": "5.0.x"
 	},
 	"repository": {
 		"type": "git",
