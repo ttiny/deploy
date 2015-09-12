@@ -1,6 +1,7 @@
 "use strict";
 
 var ChildProcess = require( 'child_process' );
+var Fs = require( 'fs' );
 
 class Docker {
 
@@ -13,7 +14,11 @@ class Docker {
 	}
 
 	Build ( argv ) {
-		var options = { stdio: 'inherit', cwd: this._path };
+		var isLocal = Fs.existsSync( this._path );
+		var options = { stdio: 'inherit' };
+		if ( isLocal ) {
+			options.cwd = this._path;
+		}
 		var args = [ 'build', '--force-rm', '-t', this._image ];
 		if ( this._file ) {
 			args.push( '-f', this._file );
@@ -24,7 +29,12 @@ class Docker {
 		if ( argv[ 'pull' ] ) {
 			args.push( '--pull' );
 		}
-		args.push( '.' );
+		if ( isLocal ) {
+			args.push( '.' );
+		}
+		else {
+			args.push( this._path );
+		}
 		var ret = Docker.spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
