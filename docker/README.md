@@ -1,6 +1,6 @@
-This is Docker image for <https://github.com/Perennials/deploy>. It is
-bundled for usage with github.com and bitbucket.org, it only needs a config
-and a optionally a private key.
+This is Dockerfile image for <https://hub.docker.com/r/perennial/deploy/>. It
+is bundled for usage with github.com, it only needs a config and optionally a
+private key.
 
 ```sh
 ### from the root of the deploy folder
