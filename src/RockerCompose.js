@@ -49,6 +49,7 @@ class RockerCompose {
 				for ( var i = volumes.length - 1; i >= 0; --i ) {
 					var hostDir = volumes[ i ].splitFirst( ':' ).left;
 					if ( !Fs.existsSync( hostDir ) ) {
+						console.log( 'Creating volume directory', hostDir, '.' );
 						Shelljs.mkdir( '-p', hostDir );
 					}
 				}

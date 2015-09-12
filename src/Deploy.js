@@ -104,13 +104,9 @@ class Deploy extends HttpApp {
 		var _this = this;
 
 		if ( project == '*' ) {
-			this.updateKnownRepos( function ( repos ) {
-				
-				for ( var i = 0, iend = repos.length; i < iend; ++i ) {
-					_this.doAction( action, 'repo:' + repos[ i ], branch );
-				}
-
-			} );
+			for ( var name in this._projects ) {
+				this.doAction( action, name, branch );
+			}
 			return;
 		}
 
@@ -155,7 +151,7 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					_this.getProjectBranches( project, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for', remote, ', skipping.' );
+							console.error( 'Couldn\'t retrieve the list of branches for', project.getName(), ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -250,14 +246,39 @@ class Deploy extends HttpApp {
 		
 	}
 
+	//bp: this is not in the project because atm all .enter calls are outside Project/Repo/etc
 	getProjectBranches ( project, callback ) {
 		project.enter( '*' );
-		var repo = project.getRepo();
-		repo.enter();
-		var remote = repo.getRemote();
-		repo.exit();
+
+		// check if we are limited to static branch names or we have *
+		var local = [];
+		var branches = project.getBranches(); 
+		for ( var i = branches.length - 1; i >= 0; --i ) {
+			var branch = branches[ i ];
+			if ( branch instanceof RegExp || branch == '*' ) {
+				continue;
+			}
+			local.push( branch );
+		}
+
+		// if all enabled branches are already known don't request remotes
+		if ( local.length < branches.length ) {
+			var repo = project.getRepo();
+			if ( repo ) {
+				repo.enter();
+				var remote = repo.getRemote();
+				repo.exit();
+				project.exit();
+				var hostApi = this.getHostApi( remote );
+				if ( hostApi ) {
+					hostApi.getBranches( remote.splitFirst( '/' ).right, callback );
+					return;
+				}
+			}
+		}
+
 		project.exit();
-		this.getHostApi( remote ).getBranches( remote.splitFirst( '/' ).right, callback );
+		callback( null, local );
 	}
 
 	findProjectsByName ( name ) {
@@ -315,43 +336,6 @@ class Deploy extends HttpApp {
 
 	getTemplate ( name ) {
 		return this._templates[ name ];
-	}
-
-	updateKnownRepos ( callback ) {
-
-		var _this = this;
-		var remotesLeft = 0;
-		var allrepos = [];
-		
-		function remoteDone () {
-			if ( --remotesLeft === 0 ) {
-				callback( allrepos );
-			}
-		}
-
-		// find list of repos
-		
-		var credentials = this._credentials;
-		for ( var remote in credentials ) {
-			++remotesLeft;
-			
-			// don't make 10000 requests while debuging
-			// allrepos = require( '../debug/' + remote.replace( '/', '-' ) + '-repos' );
-			// remoteDone();
-			// continue;
-			///
-			
-			let host = remote.splitFirst( '/' );
-			this.getHostApi( remote ).getRepos( function ( err, repos ) {
-				if ( err === null ) {
-					for ( var i = repos.length - 1; i >= 0; --i ) {
-						repos[ i ] = host.left + '/' + repos[ i ];
-					}
-					allrepos = allrepos.concat( repos );
-				}
-				remoteDone();
-			} );
-		}
 	}
 
 }

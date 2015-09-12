@@ -346,23 +346,16 @@ everywhere throughout the configuration.
 
 Passing `*` will will perform the command on all projects.
 
-**Remark:** Using `*` for a project is connected to the `credentials`
-configuration. **deploy** will use the credentials from the config to find all
-available repositories and then find all related projects for each repository.
-`*` can not be used without proper `credentials` configuration (except for
-public repos).
-
-
 #### Branch syntax
 The branch can be given as as literal name or `*`.
 
 Passing `*` will perform the command on all enabled branches.
 
-**Remark:** Using `*` for a branch is connected to the `repo` configuration of
+**Remark:** Using `*` for a branch may use the `repo` configuration of
 the project. **deploy** will use the credentials from the config to find all
-remote branches. `*` can not be used on a project without `repo` configuration
-or without proper `credentials` configuration for the give `repo` (except for
-public repos).
+remote branches for this repo. `*` can be used on a project without `repo` configuration
+or without `credentials` configuration for the given `repo`, but only for public
+`repos` or only for the `branches` listed in the project configuration. 
 
 #### Examples
 
@@ -515,8 +508,6 @@ TODO
 - Be able to do things for projects/repos like events: pre-sync, post-sync,
   pre-clone, post-clone, pre-clean, post-clone, error, success, or something
   of this sort.
-- `*` for project or branch will not work without `repo` configuration. This
-  means it can not be used for `docker` or `pod` without `repo`.
 - Would be nice to be able to configure the path to rocker-compose.
 - Add install instructions for running from Docker.
 

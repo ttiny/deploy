@@ -148,11 +148,19 @@ class Project {
 		var branches = yaml( this._data.branches, vars );
 		if ( branches instanceof Array ) {
 			for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-				this._branches.push( vars.render( yaml( branches[ i ], vars ) ) );
+				var branch = vars.render( yaml( branches[ i ], vars ) );
+				if ( Number.isNumber( branch ) ) {
+					branch = branch.toString();
+				}
+				this._branches.push( branch );
 			}
 		}
 		else if ( branches !== undefined ) {
-			this._branches.push( vars.render( branches ) );
+			var branch = vars.render( branches );
+			if ( Number.isNumber( branch ) ) {
+				branch = branch.toString();
+			}
+			this._branches.push( branch );
 		}
 		else {
 			this._branches.push( '*' );
@@ -190,9 +198,6 @@ class Project {
 		var branches = this._branches;
 		for ( var i = 0, iend = branches.length; i < iend; ++i ) {
 			var branch2 = branches[ i ];
-			if ( Number.isNumber( branch2 ) ) {
-				branch2 = branch2.toString();
-			}
 			if ( String.isString( branch2 ) && (branch == branch2 || branch2 == '*') ) {
 				return true;
 			}
@@ -202,6 +207,10 @@ class Project {
 		}
 
 		return false;
+	}
+
+	getBranches () {
+		return this._branches;
 	}
 
 	isUsingRepo ( repo ) {
