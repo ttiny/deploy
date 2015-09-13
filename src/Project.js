@@ -13,8 +13,11 @@ class Project {
 
 		while ( yaml( data.extends, vars ) ) {
 			var tmpl = app.getTemplate( data.extends );
+			if ( tmpl === undefined ) {
+				throw new Error( 'Template ' + data.extends + ' is not defined.' );
+			}
 			delete data.extends;
-			data = tmpl.mergeDeep( data );
+			data = tmpl.duplicate().mergeDeep( data );
 		}
 		this._data = data;
 		this._name = data.name;
@@ -228,7 +231,7 @@ class Project {
 	}
 
 	getBranches () {
-		return this._branches;
+		return yaml( this._branches, this._vars );
 	}
 
 	isUsingRepo ( repo ) {

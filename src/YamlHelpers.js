@@ -14,6 +14,9 @@ global.yaml = function ( yaml, vars ) {
 	if ( yaml instanceof DeferredYaml ) {
 		return yaml.resolve( vars );
 	}
+	else if ( yaml instanceof Function ) {
+		return yaml( global, require, vars );
+	}
 
 	return yaml;
 }

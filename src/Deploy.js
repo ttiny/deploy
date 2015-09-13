@@ -198,7 +198,7 @@ class Deploy extends HttpApp {
 		}
 
 		// build projects list
-		var projects = yaml( this._yaml.projects, this._vars) ;
+		var projects = yaml( this._yaml.projects, this._vars);
 		if ( projects instanceof Object ) {
 
 			// load the templates

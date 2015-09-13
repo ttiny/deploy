@@ -185,10 +185,11 @@ There are two sections in the root of the config file related to the project con
 
 #### Variables
 Just a list of global variables that can be reused elsewhere in the
-configuration. To use the variable use the `{variable_name}` syntax anywhere.
-Variables will be resolved when they are actually used, not at the time of
-loading the config. If a variable is used as sole value of some node, it
-should be quoted to disambiguate the YAML mapping syntax.
+configuration. To use the variable use the `{variable_name}` or
+`${variable_name}` syntax anywhere. Variables will be resolved when they are
+actually used, not at the time of loading the config. If a variable is used as
+sole value of some node, it should be quoted or prepended with `$` to
+disambiguate the YAML mapping syntax.
 
 ```yaml
 vars:

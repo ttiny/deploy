@@ -1,3 +1,5 @@
+"use strict";
+
 /**
 A collection of utilities for working with command line arguments.
 @def namespace Argv
@@ -13,11 +15,11 @@ arguments. Other arguments will be named by their index. Arguments may appear
 multiple times.
 
 ```
--arg1=value -flag arg2 -arg3=1 -arg3=2 -arg3
+-arg1=value -flag arg2 -arg3=1 -arg3=2 -arg3 --arg4 value
 ```
 will become
 ```js
-{ arg1: 'value', flag: true, "2": 'arg2', arg3: [ '1', '2', true ] }
+{ arg1: 'value', flag: true, "2": 'arg2', arg3: [ '1', '2', true ], arg4: 'value' }
 ```
 
 @def function Argv.parse ( args )
@@ -26,8 +28,9 @@ will become
     executable and the script name will be ignored).
 @return object|null null if the argument list is empty.
 */
-var Argv = {
-	parse ( args ) {
+class Argv {
+	
+	static parse ( args ) {
 		if ( args === undefined ) {
 			args = process.argv.slice( 2 );
 		}
@@ -36,7 +39,7 @@ var Argv = {
 		}
 		var argv = {};
 		for ( var i = 0; i < args.length; ++i ) {
-			var arg = args[i];
+			var arg = args[ i ];
 			var p = arg.indexOf( '=' );
 			var key = null;
 			var value = null;
@@ -49,6 +52,12 @@ var Argv = {
 				if ( arg.charAt( 0 ) == '-' ) {
 					key = arg.substr( 1 );
 					value = true;
+					if ( key.charAt( 0 ) == '-' ) {
+						key = key.substr( 1 );
+						if ( i + 1 < args.length ) {
+							value = args[ ++i ]
+						}
+					}
 				}
 				else {
 					key = i;
@@ -57,19 +66,20 @@ var Argv = {
 			}
 
 			if ( !argv.hasOwnProperty( key ) ) {
-				argv[key] = value;
+				argv[ key ] = value;
 			}
 			else {
-				if ( argv[key] instanceof Array ) {
-					argv[key].push( value );
+				if ( argv[ key ] instanceof Array ) {
+					argv[ key ].push( value );
 				}
 				else {
-					argv[key] = [ argv[key], value ];
+					argv[ key ] = [ argv[ key ], value ];
 				}
 			}
 		}
 		return argv;
 	}
-};
+
+}
 
 module.exports = Argv;

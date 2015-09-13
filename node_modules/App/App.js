@@ -1,6 +1,5 @@
 "use strict";
 
-require( 'Prototype' );
 var Argv = require( './Argv.js' );
 
 class App {

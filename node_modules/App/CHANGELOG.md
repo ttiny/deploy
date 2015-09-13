@@ -1,3 +1,7 @@
+1.5
+===
+- Add support for `--arg value` notation in `Argv`.
+
 1.4
 ===
 - Move to classes internally.

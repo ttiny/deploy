@@ -1,3 +1,7 @@
+### 1.5.0
+- Changed the behavior of `Object.duplicate()`. It will not attempt to
+  duplicate arbitrary objects anymore, only strictly `Object`.
+
 ### 1.4.0
 - Require Node.js >= 4.0.0.
 - Rename `Function.defineStatic()` to `Function.static()`.

@@ -28,9 +28,15 @@ Unitest( 'Object.mergeDeep()', function ( test ) {
 
 Unitest( 'Object.duplicate()', function ( test ) {
 
-	var a = { a: {}, b: 3 };
+	class C {
+
+	}
+
+	var a = { a: {}, b: 3, c: new C };
 	test( a.duplicate() !== a );
 	test( a.duplicate().a !== a.a );
+	test( a.duplicate().c === a.c );
+	test( a.duplicate().duplicate().c === a.c );
 	test( a.duplicate().b == a.b );
 
 } );

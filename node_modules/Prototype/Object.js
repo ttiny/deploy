@@ -99,14 +99,18 @@ Object.defineProperty( Object.prototype, 'mergeDeep', {
 /**
  * Creates object with duplicates of the properties of this object.
  * This function works recursively and will call .duplicate() for the
- * properties that implement this function.
+ * properties that implement this function. Objects of custom classes
+ * will not be duplicated but passed as reference.
  * @def function Object.duplicate ()
  * @return Object
  * @author Borislav Peev <borislav.asdf@gmail.com>
  */
 Object.defineProperty( Object.prototype, 'duplicate', {
 	value: function () {
-		var ret = Object.create( Object.getPrototypeOf( this ) );
+		if ( !Object.isObject( this ) ) {
+			return this;
+		}
+		var ret = {};
 		var keys = Object.getOwnPropertyNames( this );
 		for ( var i = 0, iend = keys.length; i < iend; ++i ) {
 			var key = keys[ i ];

@@ -59,7 +59,7 @@ class VarStack {
 		}
 
 		var _this = this;
-		return str.replace( /\{([^}]+)\}/g, function ( match, name ) {
+		return str.replace( /\$?\{([^}]+)\}/g, function ( match, name ) {
 			var val = _this.get( name ) || match;
 			if ( val === undefined ) {
 				throw new Error( 'Error resolving variable ' + match );

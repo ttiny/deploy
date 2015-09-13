@@ -15,6 +15,9 @@ class RockerCompose {
 	}
 
 	Run ( argv ) {
+		if ( argv.cmd ) {
+			this._vars.cmd = argv.cmd;
+		}
 		return this._run( 'run', argv );
 	}
 
@@ -27,8 +30,13 @@ class RockerCompose {
 	}
 
 	_run ( cmd, argv ) {
+		console.log( 'Using pod definition', this._file, '.' );
 		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
 		var args = [ cmd, '-f', '-' ];
+		if ( argv[ 'debug-pod' ] ) {
+			console.log( 'Pod definition:', '\n--------', template, '\n^^^' );
+			args.unshift( '-verbose' );
+		}
 		var options = { stdio: [ 'pipe', 'inherit', 'inherit' ], input: template, cwd: this._path };
 		if ( cmd == 'run' ) {
 			this._createVolumes( template );
