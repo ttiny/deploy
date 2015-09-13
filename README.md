@@ -533,6 +533,7 @@ TODO
 - Be able to do things for events like on: build.start, build.success, build.error, build.finish.
 - Support multiple secret access strings and print the one used in the logs.
 - Logging the HTTP stuff to files.
+- Would be cool to have unitests, but mocking github and everything...
 
 
 Authors
