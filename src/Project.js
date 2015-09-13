@@ -114,7 +114,7 @@ class Project {
 		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
 			var docker = dockers[ i ];
 			docker.enter();
-			ret = docker.push( argv );
+			ret = docker.Push( argv );
 			docker.exit();
 			if ( !ret ) {
 				return ret;
