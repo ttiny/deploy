@@ -1,12 +1,6 @@
 FROM node:4.0
 MAINTAINER Borislav Peev (borislav.asdf at gmail dot com)
 
-COPY . /app
-
-# install our local rocker-compose copy
-RUN tar -xjC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-0.1.0_linux_amd64.tar.gz && \
-    chmod +x /usr/local/bin/rocker-compose
-
 # this is neede to install docker from https
 RUN apt-get update && \
     apt-get install apt-transport-https -y
@@ -17,20 +11,26 @@ RUN echo "deb https://apt.dockerproject.org/repo debian-jessie main" >> /etc/apt
     apt-get update && \
     apt-get install docker-engine -y
 
-WORKDIR /app
-
-VOLUME /app/config
-VOLUME /app/log
 
 # predefined known_hosts for github and bitbucket
 RUN mkdir -p /root/.ssh
 COPY docker/known_hosts /root/.ssh/
 COPY docker/deploy.sh /deploy
 
+# copy the app files
+COPY . /app
+
+# install our local rocker-compose copy
+RUN tar -xjC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-0.1.0_linux_amd64.tar.gz && \
+    chmod +x /usr/local/bin/rocker-compose
+
 # clean unneeded stuff
 RUN rm -rf /app/docker /app/thirdparty
 RUN ln -sf /deploy /usr/local/bin/deploy
 
+VOLUME /app/config
+VOLUME /app/log
 EXPOSE 80
 
+WORKDIR /app
 CMD [ "/deploy" ]
