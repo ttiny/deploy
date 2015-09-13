@@ -1,10 +1,16 @@
 #!/bin/bash
 # run the ssh agent in the background
-eval "$(ssh-agent -s)"
+DEBUG="&>/dev/null"
+
+if [[ -f /app/config/DEBUG ]]; then
+	DEBUG=
+fi
+
+eval 'eval "$(ssh-agent -s)"' $DEBUG
 
 if [[ -f /app/config/id_rsa ]]; then
 	# add keys
-	ssh-add /app/config/id_rsa
+	eval ssh-add /app/config/id_rsa $DEBUG
 fi
 
 # listen for deploy requests
