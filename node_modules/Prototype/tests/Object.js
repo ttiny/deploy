@@ -24,6 +24,9 @@ Unitest( 'Object.mergeDeep()', function ( test ) {
 	test( a.b instanceof Object && a.b.b22 === 22 );
 	test( a.c === 4 );
 
+	var a = { a: { b: { c: 1 } } }.mergeDeep( { a: { b: null } } );
+	test( a.a.b === null );
+
 } );
 
 Unitest( 'Object.duplicate()', function ( test ) {

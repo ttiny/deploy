@@ -1,3 +1,6 @@
+### 1.5.1
+- Fix `Object.mergeDeep()` when the a matching key to be merged is not an Object.
+
 ### 1.5.0
 - Changed the behavior of `Object.duplicate()`. It will not attempt to
   duplicate arbitrary objects anymore, only strictly `Object`.

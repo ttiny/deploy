@@ -20,6 +20,7 @@ class VarStack {
 				console.log( v.name, '=', this.render( yaml( v.value, this ) ) );
 			}
 		}
+		console.log( '-----' );
 	}
 
 	push ( name ) {

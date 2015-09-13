@@ -193,7 +193,19 @@ class Deploy extends HttpApp {
 				this._vars.set( name, this._vars.render( vars[ name ] ) );
 			}
 		}
-		if ( this._vars.get( 'debug' ) === true ) {
+		var argv = this.getArgv();
+		if ( argv.var ) {
+			if ( String.isString( argv.var ) ) {
+				argv.var = [ argv.var ];
+			}
+			if ( argv.var instanceof Array ) {
+				for ( var i = argv.var.length - 1; i >= 0; --i ) {
+					var v = argv.var[ i ].splitFirst( '=' );
+					this._vars.set( v.left, v.right );
+				}
+			}
+		}
+		if ( this._vars.get( 'debug' ) ) {
 			this._vars.print();
 		}
 

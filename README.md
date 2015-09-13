@@ -36,6 +36,7 @@ GitLab on the way.
       - [GitHub](#github)
   - [Project configuration](#project-configuration)
     - [Variables](#variables)
+      - [Debugging](#debugging)
       - [Example](#example)
     - [Projects](#projects)
       - [Variables](#variables-1)
@@ -202,6 +203,12 @@ Variable | Description
 ---- | ----
 `{deploy.root}` | The root directory where the application itself resides.
 
+##### Debugging
+Sometimes it is useful to be able to debug the values of your variables. If you place
+a global variable `debug: true` the globals will be printed after they are loaded.
+
+You can use something like `deploy debug --var debug=true`. Debug is not valid command
+so the program will terminate. Of course you could use real command.
 
 ##### Example
 ```yaml
@@ -357,8 +364,11 @@ project and given branch. Multiple commands are performed in the same order
 and are separated with commas, without space.
 
 ```sh
-deploy <command[,command]...> <project> <branch>
+deploy <command[,command]...> <project> <branch> [--var name=value]..
 ```
+
+`--var` allows for overriding [global variables](#variables).
+
 
 #### Project syntax
 The project can be given as literal name, which should match the one in the configuration, as repository or as `*`.
@@ -460,15 +470,21 @@ All non-existing host directories that are to be bound as container volumes will
 created prior to launching the pod.
 
 ```sh
-deploy run <project> <branch>
+deploy run <project> <branch> [-debug-pod[=more]]
 ```
+
+`-debug-pod` will print the rendered pod definition which is passed to
+rocker-compose. Adding `=more` will print even more info from rocker-compose.
 
 #### Stop
 The command will run the Docker container(s) pod for the specified project and branch.
 
 ```sh
-deploy stop <project> <branch>
+deploy stop <project> <branch> [-debug-pod]
 ```
+
+`-debug-pod` will print the rendered pod definition which is passed to
+rocker-compose.
 
 
 REST usage

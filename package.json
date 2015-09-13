@@ -8,8 +8,8 @@
 	],
 	"main": "deploy.js",
 	"dependencies": {
-		"Prototype": "https://github.com/perennials/prototype-js/tarball/1.5.0",
-		"App": "https://github.com/perennials/app-node/tarball/1.5.2",
+		"Prototype": "https://github.com/perennials/prototype-js/tarball/master",
+		"App": "https://github.com/perennials/app-node/tarball/master",
 		"js-yaml": "3.4.x",
 		"github": "0.2.x",
 		"netmask": "1.0.x",

@@ -83,11 +83,12 @@ Object.defineProperty( Object.prototype, 'mergeDeep', {
 		for ( var i = 0, iend = keys.length; i < iend; ++i ) {
 			var key = keys[ i ];
 			var existing = this[ key ];
-			if ( Object.isObject( existing ) ) {
-				existing.mergeDeep( object[ key ] );
+			var value = object[ key ];
+			if ( Object.isObject( existing ) && Object.isObject( value ) ) {
+				existing.mergeDeep( value );
 			}
 			else {
-				this[ key ] = object[ key ];
+				this[ key ] = value;
 			}
 		}
 		return this;

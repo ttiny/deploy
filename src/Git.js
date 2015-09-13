@@ -26,8 +26,44 @@ class Git {
 	}
 
 	clone () {
+		var isEmpty = true;
+		if ( Fs.existsSync( this._local ) && Fs.statSync( this._local ).isDirectory() ) {
+			try {
+				Fs.rmdirSync( this._local )
+			}
+			catch ( e ) {
+				console.log( 'Local directory is not empty for clone. Trying init.' );
+				isEmpty = false;
+				// this will happen for non-empty dir, in which case git clone will also fail
+			}
+		}
 		Shelljs.mkdir( '-p', this._local );
+
 		var options = { stdio: 'inherit', cwd: this._local };
+		if ( !isEmpty ) {
+			var args = [ 'init' ];
+			var ret = Git.spawn( 'git', args, options );
+			if ( ret.status === 0 ) {
+
+				var args = [ 'remote', 'add', 'origin', this._remote ];
+				var ret = Git.spawn( 'git', args, options );
+
+				if ( ret.status === 0 ) {
+					var args = [ 'fetch' ];
+					var ret = Git.spawn( 'git', args, options );
+
+					if ( ret.status === 0 ) {
+						var args = [ 'checkout', '-t', 'origin/' + this._branch ];
+						Git.spawn( 'git', args, options );
+						
+						if ( ret.status === 0 ) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+
 		var args = [ 'clone', '--recursive', '--branch', this._branch, this._remote, this._local ];
 		var ret = Git.spawn( 'git', args, options );
 		return ret.status === 0;

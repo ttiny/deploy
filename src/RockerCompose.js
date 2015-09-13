@@ -34,7 +34,10 @@ class RockerCompose {
 		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
 		var args = [ cmd, '-f', '-' ];
 		if ( argv[ 'debug-pod' ] ) {
-			console.log( 'Pod definition:', '\n--------', template, '\n^^^' );
+			console.log( 'Pod definition:', '\n--------' );
+			console.log( template, '\n^^^' );
+		}
+		if ( argv[ 'debug-pod' ] == 'more' ) {
 			args.unshift( '-verbose' );
 		}
 		var options = { stdio: [ 'pipe', 'inherit', 'inherit' ], input: template, cwd: this._path };
