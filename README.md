@@ -70,21 +70,63 @@ GitLab on the way.
 Installation
 ------------
 
-You need Node.js >= 4.0.0. If you don't have it you don't need to install it system wide. You can just download the
-archive, extract it somewhere and use the `node` and `npm` commands from the `bin` directory there.
-
 ### Docker
 
 1. Make some empty dir, e.g. `/myconfig`.
 2. Put your private SSH key `id_rsa` (if you need one) and your **deploy** config
    `local.yml` in `/myconfig`.
 3. Make some dir where you will sync your projects, e.g. `/myapps`, it needs
-   to be accessible inside the container, as well as all other dirs referenced in your config.
-4. Use from the CLI like `docker run --rm -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master deploy sync "*" "*"`. The last three arguments is the actual deploy command, you can change it.
-5. Or start an HTTP server `docker run --rm -p 80:80 -v /myapps:/apps -v /myconfig:/app/config -v /var/run/docker.sock:/var/run/docker.sock perennial/deploy:master`.
+   to be accessible inside the container, as well as all other dirs referenced
+   in your config.
+4. Use from the CLI like (replac with your actual paths):
+
+   ```sh
+   docker run --rm -ti \
+                   -v /myapps:/apps \
+                   -v /myconfig:/app/config \
+                   -v /var/run/docker.sock:/var/run/docker.sock \
+                   -v /user/.docker:/root/.docker \
+                   perennial/deploy:master \
+                   deploy sync "*" "*"
+   ```
+
+   Explanation:
+
+   - `-v /myapps:/apps` - this is somewhere to be able to do git clones and
+     similar, doing it in the container makes little sense.
+   - `-v /myconfig:/app/config` - this is the local config for the **deploy**
+     app and the SSH private key for git.
+   - `-v /var/run/docker.sock:/var/run/docker.sock` - this is so the container
+     can access the Docker API.
+   - `-v /user/.docker:/root/.docker` - this is so docker login will carry
+     inside the container.
+
+   Replace `/user/.docker` with your actual user directory, if you need to push, or remove this line otherwise.
+   The last three arguments (`sync "*" "*"`) is the actual deploy command, you can change it.
+
+   Of course you will want to make into a shell script for reuse, replacing
+   the deploy arguments with `$@` and symlinking it to your path, so you can
+   just type `deploy sync my branch`... Or if you start it without arguments
+   it will start a web server, but you will need to add port redirect like `-p 80:80`.
+
+5. Or start an HTTP server
+
+   ```sh
+   docker run --rm -ti -p 80:80 \
+                       -v /myapps:/apps \
+                       -v /myconfig:/app/config \
+                       -v /var/run/docker.sock:/var/run/docker.sock \
+                       -v /user/.docker:/root/.docker \
+                       perennial/deploy:master
+   ```
+   Normally you will want to start this as a daemon, e.g. `-d --restart=aways`.
+
 6. Now you can use the REST interface to trigger commands or receive webhooks.
 
 ### Native
+
+You need Node.js >= 4.0.0. If you don't have it you don't need to install it system wide. You can just download the
+archive, extract it somewhere and use the `node` command from the `bin` directory there.
 
 1. Download the contents of this repo either from the zip button or from the releases section.
 2. Extract somewhere, open a shell and cd to that directory.
