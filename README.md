@@ -1,6 +1,6 @@
 Deploy
 ======
-A Node.js tool for git and Docker deployments.
+A tool for git and Docker deployments.
 
 _The project is in pre-release state and is still being shaped by using it and
 finding better ways to do so in our environment._
