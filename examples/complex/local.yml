@@ -20,8 +20,7 @@ projects:
     branches: master
 
     repo:
-     remote: github/MyOrg/docker
-     local: {project.local}
+      github/MyOrg/docker: '{project.local}'
 
     ### include the docker config from a file, check common-images.docker.yml
     docker: !yamlfile 'common-images.docker.yml'
@@ -34,8 +33,7 @@ projects:
     # only enable the master and two digit semver branches
     branches: [ 'master', !!js/regexp '^\d+\.\d+$' ]
     repo:
-      remote: github/MyOrg/ws2
-      local: /apps/{project}/{branch}
+      github/MyOrg/ws2: /apps/{project}/{branch}
 
     docker:
       image: 'myorg/{project}:{branch}'
@@ -77,12 +75,10 @@ projects:
         }
 
     repo:
-      remote: github/MyOrg/foo-{project}
-      local: '{project.local}'
-      submodules:
-        # the branch here is a variable. it will be resolved after the main repo is synced,
-        # then the appropriate sdk version will be downloaded
-        github/MyOrg/sdk-php#{project.sdk.version}: '{project.local}/lib/sdk-php'
+      github/MyOrg/foo-{project}: '{project.local}'
+      # the branch here is a variable. it will be resolved after the main repo is synced,
+      # then the appropriate sdk version will be downloaded
+      github/MyOrg/sdk-php#{project.sdk.version}: '{project.local}/lib/sdk-php'
 
     docker:
       image: 'myorg/{project}:{branch}'

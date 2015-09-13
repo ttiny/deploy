@@ -35,9 +35,8 @@ projects:
       apps: '{deploy.example}/download/apps'
     
     repo:
-      remote: github/Perennials/deploy
       # using the project variable, it will have project. prefix
-      local: '{project.local}'
+      github/Perennials/deploy: '{project.local}'
 
     docker:
       image: perennial/deploy:{branch}

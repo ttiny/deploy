@@ -278,6 +278,14 @@ class Deploy extends HttpApp {
 				var remote = repo.getRemote();
 				repo.exit();
 				project.exit();
+				// if we have hardcoded branch for the repo then use it
+				if ( remote.indexOf( '#' ) > 0 ) {
+					var branch = remote.splitFirst( '#' ).right;
+					if ( branch != '*' ) {
+						callback( null, [ branch ] );
+						return;
+					}
+				}
 				var hostApi = this.getHostApi( remote );
 				if ( hostApi ) {
 					hostApi.getBranches( remote.splitFirst( '/' ).right, callback );
@@ -307,7 +315,7 @@ class Deploy extends HttpApp {
 				let project = projects[ name ];
 				this.getProjectBranches( project, function ( err, branches ) {
 					if ( err ) {
-						console.error( 'Couldn\'t retrieve the list of branches for', repo, ', skipping.' );
+						console.error( 'Couldn\'t retrieve the list of branches for project', project.getName(), ', skipping.' );
 					}
 					else {
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {

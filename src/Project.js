@@ -29,17 +29,31 @@ class Project {
 		if ( this._repo === null ) {
 			throw new Error( 'Can not sync a project (' + this._name + ') without git "repo" configuration.' );
 		}
-		this._repo.enter();
-		var ret = this._repo.Sync( argv );
-		this._repo.exit();
+		var repos = this._repo;
+		for ( var i = 0, iend = repos.length; i < iend; ++i ) {
+			var repo = repos[ i ];
+			repo.enter();
+			var ret = repo.Sync( argv );
+			repo.exit();
+			if ( !ret ) {
+				return ret;
+			}
+		}
 		return ret;
 	}
 
 	Clean ( argv ) {
 		if ( this._repo ) {
-			this._repo.enter();
-			var ret = this._repo.Clean( argv );
-			this._repo.exit();
+			var repos = this._repo;
+			for ( var i = 0, iend = repos.length; i < iend; ++i ) {
+				var repo = repos[ i ];
+				repo.enter();
+				var ret = repo.Clean( argv );
+				repo.exit();
+				if ( !ret ) {
+					return ret;
+				}
+			}
 		}
 		if ( this._pod ) {
 			this._pod.enter();
@@ -168,7 +182,11 @@ class Project {
 
 
 		if ( this._data.repo ) {
-			this._repo = new Repo( this, yaml( this._data.repo, vars ) );
+			var repo = yaml( this._data.repo, vars );
+			this._repo = [];
+			for ( var remote in repo ) {
+				this._repo.push( new Repo( this, remote, repo[ remote ] ) );
+			}
 		}
 
 		if ( this._data.docker ) {
@@ -217,14 +235,21 @@ class Project {
 		if ( this._repo === null ) {
 			return false;
 		}
-		this._repo.enter();
-		var ret = this._repo.isUsingRepo( repo );
-		this._repo.exit();
-		return ret;
+		var repos = this._repo;
+		for ( var i = 0, iend = repos.length; i < iend; ++i ) {
+			var repoo = repos[ i ];
+			repoo.enter();
+			var ret = repoo.isUsingRepo( repo );
+			repoo.exit();
+			if ( ret ) {
+				return ret;
+			}
+		}
+		return false;
 	}
 
 	getRepo () {
-		return this._repo;
+		return this._repo ? this._repo[ 0 ] : null;
 	}
 
 	getApp () {

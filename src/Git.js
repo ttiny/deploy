@@ -7,11 +7,10 @@ var Github = require( './host/Github' );
 
 class Git {
 
-	constructor ( vars, remote, local ) {
+	constructor ( remote, local ) {
 
 		remote = Git.getFullRemote( remote );
 		
-		this._vars = vars;
 		this._branch = remote.branch;
 		this._remote = remote.repo;
 		this._local = local;
@@ -29,7 +28,7 @@ class Git {
 	clone () {
 		Shelljs.mkdir( '-p', this._local );
 		var options = { stdio: 'inherit', cwd: this._local };
-		var args = [ 'clone', '--recursive', '--branch', this._branch || this._vars.get( 'branch' ), this._remote, this._local ];
+		var args = [ 'clone', '--recursive', '--branch', this._branch, this._remote, this._local ];
 		var ret = Git.spawn( 'git', args, options );
 		return ret.status === 0;
 	}
@@ -78,7 +77,7 @@ class Git {
 		while ( true ) {
 
 			options = { stdio: undefined, cwd: this._local };
-			args = [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch || this._vars.get( 'branch' ) ];
+			args = [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ];
 			ret = Git.spawn( 'git', args, options );
 
 			

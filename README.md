@@ -234,9 +234,9 @@ projects:
     vars:
       # project specific variables
     repo:
-      # pod configuration for the project
+      # repo configuration for the project
     docker:
-      # pod configuration for the project
+      # docker configuration for the project
     pod:
       # pod configuration for the project
 ```
@@ -248,7 +248,7 @@ Property | Value type | Description
 `projects.name.template` | `true` | Indicates the project is a template to be used for base of other projects and should be excluded of normal project treatment.
 `projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
-`projects.name.repo` | mapping | Repo configuration for the project. [See bellow](#repo-configuration).
+`projects.name.repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
 `projects.name.docker` | mapping\|mapping[] | Docker configuration for the project. [See bellow](#docker-configuration).
 `projects.name.pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
 
@@ -265,24 +265,20 @@ Variable | Description
 
 
 ##### Repo configuration
-This configuration is mandatory for the [git commands](#git-commands).
+This configuration is mandatory for the [git commands](#git-commands). It is a
+mapping where the key is the remote repository and the value is the local
+directory where the remote will be synced. The mapping may contain multiple
+repos, but the first one is considered a main one and will be used when
+determining the branches for the project in some cases. The branch part of the
+remote is optional for the main (the first) repository and if ommited it is
+the same as if the variables `{branch}` is used, in otherwords the current
+branch will be used. The host in the remote is given only with its name, e.g.
+`github/Perennials/deploy`.
 
 ```yaml
 repo:
-  vars:
-    ## repo specific variables
-  remote: host/user/repo
-  local: local_directory
-  submodules:
-    host/user/repo#branch:local_directory
+  host/user/repo#branch:local_directory
 ```
-
-Property | Value type | Description
----- | ---- | ----
-`repo.remote` | string | **Mandatory.** Remote repository. The host is given only with its name, e.g. `github/Perennials/deploy`.
-`repo.local` | string | **Mandatory.** Local directory where the remote will be synced.
-`repo.vars` | mapping | A list of repo specific variables. The same as in the root section but all names will be prefixed with `repo.` and will only be available in the context of the repo, not globally.
-`repo.submodules` | mapping | Related repositories to be synced after the main one. The term "submodule" here does not refer to the git term submodule. It is only a mean to sync related dependencies of the main project repo, without using real submodules.
 
 ##### Docker configuration
 Describes the Docker image(s) for this project. Can be a mapping or array of mappings.
@@ -334,10 +330,8 @@ ws2:
   branches: [ 'master', !!js/regexp '^\d+\.\d+$' ]
   extends: base
   repo:
-    ### will sync from this repo
-    remote: github/Perennials/ws2
-    ### to this local directory
-    local: '{project.local}'
+    ### will sync from this repo   to this local directory
+    github/Perennials/ws2:         '{project.local}'
   
   docker:
     ### name of docker image
@@ -536,9 +530,7 @@ TODO
 - GitLab support <https://gitlab.com/gitlab-org/gitlab-ce/blob/master/doc/web_hooks/web_hooks.md>.
 - BitBucket support <https://bitbucket.org/atlassian/bitbucketjs>.
 - Mail on errors.
-- Be able to do things for projects/repos like events: pre-sync, post-sync,
-  pre-clone, post-clone, pre-clean, post-clone, error, success, or something
-  of this sort.
+- Be able to do things for events like on: build.start, build.success, build.error, build.finish.
 - Support multiple secret access strings and print the one used in the logs.
 - Logging the HTTP stuff to files.
 
