@@ -593,6 +593,7 @@ TODO
 - Support multiple secret access strings and print the one used in the logs.
 - Logging the HTTP stuff to files.
 - Would be cool to have unitests, but mocking github and everything...
+- Custom config location with `-config=`.
 
 
 Authors
