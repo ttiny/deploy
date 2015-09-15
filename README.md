@@ -78,7 +78,7 @@ Installation
 3. Make some dir where you will sync your projects, e.g. `/myapps`, it needs
    to be accessible inside the container, as well as all other dirs referenced
    in your config.
-4. Use from the CLI like (replac with your actual paths):
+4. Use from the CLI like (replace with your actual paths):
 
    ```sh
    docker run --rm -ti \
