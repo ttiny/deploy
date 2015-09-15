@@ -82,7 +82,7 @@ Installation
 
    ```sh
    docker run --rm -ti \
-                   -v /myapps:/apps \
+                   -v /myapps:/myapps \
                    -v /myconfig:/app/config \
                    -v /var/run/docker.sock:/var/run/docker.sock \
                    -v /user/.docker:/root/.docker \
@@ -92,7 +92,7 @@ Installation
 
    Explanation:
 
-   - `-v /myapps:/apps` - this is somewhere to be able to do git clones and
+   - `-v /myapps:/myapps` - this is somewhere to be able to do git clones and
      similar, doing it in the container makes little sense.
    - `-v /myconfig:/app/config` - this is the local config for the **deploy**
      app and the SSH private key for git.
@@ -104,8 +104,8 @@ Installation
    Replace `/user/.docker` with your actual user directory, if you need to push, or remove this line otherwise.
    The last three arguments (`sync "*" "*"`) is the actual deploy command, you can change it.
 
-   Of course you will want to make into a shell script for reuse, replacing
-   the deploy arguments with `$@` and symlinking it to your path, so you can
+   Of course you will want to make this into a shell script for reuse, replacing
+   the deploy arguments with `$@` and symlinking it in your path, so you can
    just type `deploy sync my branch`... Or if you start it without arguments
    it will start a web server, but you will need to add port redirect like `-p 80:80`.
 
@@ -113,7 +113,7 @@ Installation
 
    ```sh
    docker run --rm -ti -p 80:80 \
-                       -v /myapps:/apps \
+                       -v /myapps:/myapps \
                        -v /myconfig:/app/config \
                        -v /var/run/docker.sock:/var/run/docker.sock \
                        -v /user/.docker:/root/.docker \
@@ -148,14 +148,14 @@ Besides the custom elements provided by [js-yaml](https://github.com/nodeca/js-y
 which enable specifying JavaScript regular expressions and functions inside the configuration,
 **deploy** has several custom types of itself. All of these can be used anywhere and will
 be evaluated only when they are need. For example using a `!!js/function` for the value of
-a variable, will evaluate the function only when the variable need to be substituted in a
+a variable, will evaluate the function only when the variable needs to be substituted in a
 given context. The custom types provided by **deploy** are:
 
 Property | Description
 ---- | ----
-`!cmd command` | Will execute a command and use its output as a value.
+`!cmd command` | Will execute a shell command and use its output as a value.
 `!yamlfile file` | Will parse a YAML file and incorporate its contents in the document.
-`!yamlfiles pattern` | Will parse all YAML matching the pattern and incorporate its contents in the document. If all files contain mappings the return value will be a a merged mapping, otherwise an array of all the value.
+`!yamlfiles pattern` | Will parse all YAML files matching the pattern and incorporate their contents in the document. If all files contain mappings the return value will be a a merged mapping, otherwise an array of all the values.
 `!textfile file` | Will read a file as a plain text and use it as a value.
 
 
