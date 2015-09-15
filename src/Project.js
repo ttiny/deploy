@@ -156,7 +156,7 @@ class Project {
 		var locals = this._data.vars;
 		if ( locals instanceof Object ) {
 			for ( var name in locals ) {
-				vars.set( 'project.' + name, vars.render( yaml( locals[ name ], vars ) ) );
+				vars.set( 'project.' + name, vars.render( locals[ name ] ) );
 			}
 		}
 
