@@ -61,7 +61,6 @@ GitLab on the way.
 - [REST usage](#rest-usage)
   - [REST syntax](#rest-syntax)
   - [Webhooks](#webhooks)
-- [TODO](#todo)
 - [Authors](#authors)
 
 <!-- /MarkdownTOC -->
@@ -581,19 +580,6 @@ payload. For example:
 ```
 http://myserver.com/sync/myproject/master?secret=itsme
 ```
-
-
-TODO
-----
-
-- GitLab support <https://gitlab.com/gitlab-org/gitlab-ce/blob/master/doc/web_hooks/web_hooks.md>.
-- BitBucket support <https://bitbucket.org/atlassian/bitbucketjs>.
-- Mail on errors.
-- Be able to do things for events like on: build.start, build.success, build.error, build.finish.
-- Support multiple secret access strings and print the one used in the logs.
-- Logging the HTTP stuff to files.
-- Would be cool to have unitests, but mocking github and everything...
-- Custom config location with `-config=`.
 
 
 Authors
