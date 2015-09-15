@@ -73,7 +73,9 @@ Installation
 
 1. Make some empty dir, e.g. `/myconfig`.
 2. Put your private SSH key `id_rsa` (if you need one) and your **deploy** config
-   `local.yml` in `/myconfig`.
+   `local.yml` in `/myconfig`. If you experience problems with the key you can place
+   a file called `DEBUG` in the config directory, this will enable the output of the
+   ssh agent, which is normally suppressed.
 3. Make some dir where you will sync your projects, e.g. `/myapps`, it needs
    to be accessible inside the container, as well as all other dirs referenced
    in your config.

@@ -26,6 +26,7 @@ class Git {
 	}
 
 	clone () {
+		
 		var isEmpty = true;
 		if ( Fs.existsSync( this._local ) && Fs.statSync( this._local ).isDirectory() ) {
 			try {
@@ -53,10 +54,8 @@ class Git {
 					var ret = Git.spawn( 'git', args, options );
 
 					if ( ret.status === 0 ) {
-						var args = [ 'checkout', '-t', 'origin/' + this._branch ];
-						Git.spawn( 'git', args, options );
-						
-						if ( ret.status === 0 ) {
+						var ret = this.cmdWithUntrackedFiles( [ 'checkout', '-t', 'origin/' + this._branch ] );
+						if ( ret === true ) {
 							return true;
 						}
 					}
@@ -64,8 +63,21 @@ class Git {
 			}
 		}
 
+		var options = { stdio: undefined, cwd: this._local };
 		var args = [ 'clone', '--recursive', '--branch', this._branch, this._remote, this._local ];
 		var ret = Git.spawn( 'git', args, options );
+
+		var out = '';
+		if ( ret.output ) {
+			//todo: this all goes to stdout even if it is error, which is incosistent with other output which will go to stderr
+			out = ret.output.join( '\n' );
+			console.log( out );
+		}
+
+		if ( out.indexOf( 'Permission denied (publickey).' ) > 0 ) {
+			this.checkAuthentication();
+		}
+
 		return ret.status === 0;
 	}
 
@@ -88,6 +100,15 @@ class Git {
 			return false;
 		}
 
+		// convert https to ssh git address
+		if ( match[ 1 ].startsWith( 'https://' ) ) {
+			var m = match[ 1 ].slice( 8 ).splitFirst( '/' );
+			if ( m.right.endsWith( '/' ) ) {
+				m.right = m.right.slice( 0, -1 );
+			}
+			match[ 1 ] = 'git@' + m.left + ':' + m.right + '.git';
+		}
+
 		if ( match[ 1 ] !== this._remote ) {
 			console.error( 'Repo origin mismatch: expected', this._remote, 'but found', match[ 1 ], 'in', this._local, '.' );
 			return false;
@@ -108,14 +129,32 @@ class Git {
 			return false;
 		}
 
+		var ret = this.cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ] );
+		if ( ret === false ) {
+			return false;
+		}
+
+		var options = { stdio: 'inherit', cwd: this._local };
+		var args = [ 'submodule', 'update', '--init', '--recursive' ];
+		var ret = Git.spawn( 'git', args, options );
+		return ret.status === 0;
+	}
+
+	checkAuthentication () {
+		console.log( 'Check your authentication:' );
+		var options = { stdio: 'inherit', cwd: this._local };
+		var args = [ '-T', this._remote.splitFirst( ':' ).left ];
+		var ret = Git.spawn( 'ssh', args, options );
+		return ret.status === 0;	
+	}
+
+	cmdWithUntrackedFiles( args ) {
 		// retry pulling until we delete all untracked files, if any
+		var options = { stdio: undefined, cwd: this._local };
 		var lastMatch1 = null;
 		while ( true ) {
 
-			options = { stdio: undefined, cwd: this._local };
-			args = [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ];
-			ret = Git.spawn( 'git', args, options );
-
+			var ret = Git.spawn( 'git', args, options );
 			
 			var out = '';
 			if ( ret.output ) {
@@ -127,22 +166,38 @@ class Git {
 			if ( ret.status === 0 ) {
 				break;
 			}
-			
-			var match = out.match( /error: The following untracked working tree files would be overwritten by merge:\n((?:\t[^\n]+\n)*)(?=Aborting|Please move or remove them before you can merge\.)/i );
+
+			if ( out.indexOf( 'Permission denied (publickey).' ) > 0 ) {
+				this.checkAuthentication();
+			}
+
+			var match = out.match( /error: The following untracked working tree files would be overwritten by (?:merge|checkout):\n((?:\t[^\n]+\n)*)(?=Aborting|Please move or remove them before you can (?:merge|switch branches)\.)/i );
+			var files = null;
 			if ( match === null ) {
-				// no untracked files, then it just failed
-				return false;
+				match = out.match( /error: Untracked working tree file '([^\n]+)' would be overwritten by merge\./i );
+
+				if ( match === null ) {
+					// no untracked files, then it just failed
+					return false;
+				}
+				else {
+					files =  [ match[ 1 ], null ];
+				}
+			}
+			else {
+				files = match[ 1 ].split( '\n' ).map( 'trim' );
 			}
 			
 			if ( match[ 1 ] === lastMatch1 ) {
-				console.error( 'Some untracked files are preventing the pull and can not be deleted.' );
+				console.error( 'Some untracked files are preventing the sync and can not be deleted.' );
 				return false;
 			}
+
 			lastMatch1 = match[ 1 ];
 
-			var files = match[ 1 ].split( '\n' );
+			
 			for ( var i = files.length - 2; i >= 0; --i ) {
-				var fn = files[ i ].trim();
+				var fn = files[ i ];
 				if ( fn.length === 0 ) {
 					continue;
 				}
@@ -151,13 +206,10 @@ class Git {
 				console.log( 'Removing ' + fn, '.' );
 				Shelljs.rm( '-rf', fn );
 			}
-			console.log( 'Retrying the pull.' )
+			console.log( 'Retrying the sync.' )
 		}
 
-		var options = { stdio: 'inherit', cwd: this._local };
-		var args = [ 'submodule', 'update', '--init', '--recursive' ];
-		var ret = Git.spawn( 'git', args, options );
-		return ret.status === 0;
+		return true;
 	}
 
 	localIsGit () {

@@ -9,6 +9,8 @@ fi
 eval 'eval "$(ssh-agent -s)"' $DEBUG
 
 if [[ -f /app/config/id_rsa ]]; then
+	# make sure ssh-add won't complain the key is not secure
+	eval chmod 600 /app/config/id_rsa $DEBUG
 	# add keys
 	eval ssh-add /app/config/id_rsa $DEBUG
 fi
