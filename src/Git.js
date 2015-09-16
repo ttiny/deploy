@@ -17,7 +17,7 @@ class Git {
 	}
 
 	sync () {
-		if ( this.localIsGit() ) {
+		if ( this._localIsGit() ) {
 			return this.pull();
 		}
 		else {
@@ -43,18 +43,18 @@ class Git {
 		var options = { stdio: 'inherit', cwd: this._local };
 		if ( !isEmpty ) {
 			var args = [ 'init' ];
-			var ret = Git.spawn( 'git', args, options );
+			var ret = Git._spawn( 'git', args, options );
 			if ( ret.status === 0 ) {
 
 				var args = [ 'remote', 'add', 'origin', this._remote ];
-				var ret = Git.spawn( 'git', args, options );
+				var ret = Git._spawn( 'git', args, options );
 
 				if ( ret.status === 0 ) {
 					var args = [ 'fetch' ];
-					var ret = Git.spawn( 'git', args, options );
+					var ret = Git._spawn( 'git', args, options );
 
 					if ( ret.status === 0 ) {
-						var ret = this.cmdWithUntrackedFiles( [ 'checkout', '-t', 'origin/' + this._branch ] );
+						var ret = this._cmdWithUntrackedFiles( [ 'checkout', '-t', 'origin/' + this._branch ] );
 						if ( ret === true ) {
 							return true;
 						}
@@ -65,7 +65,7 @@ class Git {
 
 		var options = { stdio: undefined, cwd: this._local };
 		var args = [ 'clone', '--recursive', '--branch', this._branch, this._remote, this._local ];
-		var ret = Git.spawn( 'git', args, options );
+		var ret = Git._spawn( 'git', args, options );
 
 		var out = '';
 		if ( ret.output ) {
@@ -75,7 +75,7 @@ class Git {
 		}
 
 		if ( out.indexOf( 'Permission denied (publickey).' ) > 0 ) {
-			this.checkAuthentication();
+			this._checkAuthentication();
 		}
 
 		return ret.status === 0;
@@ -86,7 +86,7 @@ class Git {
 		// check if the local matches remote or we have different project
 		var options = { stdio: undefined, cwd: this._local };
 		var args = [ 'remote', '-v' ];
-		var ret = Git.spawn( 'git', args, options );
+		var ret = Git._spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
@@ -118,43 +118,43 @@ class Git {
 
 		var options = { stdio: 'inherit', cwd: this._local };
 		var args = [ 'reset', '--hard' ];
-		var ret = Git.spawn( 'git', args, options );
+		var ret = Git._spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
 
 		args = [ 'submodule', 'foreach', '--recursive', 'git', 'reset', '--hard' ]
-		ret = Git.spawn( 'git', args, options );
+		ret = Git._spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
 
-		var ret = this.cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ] );
+		var ret = this._cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ] );
 		if ( ret === false ) {
 			return false;
 		}
 
 		var options = { stdio: 'inherit', cwd: this._local };
 		var args = [ 'submodule', 'update', '--init', '--recursive' ];
-		var ret = Git.spawn( 'git', args, options );
+		var ret = Git._spawn( 'git', args, options );
 		return ret.status === 0;
 	}
 
-	checkAuthentication () {
+	_checkAuthentication () {
 		console.log( 'Check your authentication:' );
 		var options = { stdio: 'inherit', cwd: this._local };
 		var args = [ '-T', this._remote.splitFirst( ':' ).left ];
-		var ret = Git.spawn( 'ssh', args, options );
+		var ret = Git._spawn( 'ssh', args, options );
 		return ret.status === 0;	
 	}
 
-	cmdWithUntrackedFiles( args ) {
+	_cmdWithUntrackedFiles ( args ) {
 		// retry pulling until we delete all untracked files, if any
 		var options = { stdio: undefined, cwd: this._local };
 		var lastMatch1 = null;
 		while ( true ) {
 
-			var ret = Git.spawn( 'git', args, options );
+			var ret = Git._spawn( 'git', args, options );
 			
 			var out = '';
 			if ( ret.output ) {
@@ -168,11 +168,10 @@ class Git {
 			}
 
 			if ( out.indexOf( 'Permission denied (publickey).' ) > 0 ) {
-				this.checkAuthentication();
+				this._checkAuthentication();
 			}
 
 			var match = out.match( /error: The following untracked working tree files would be overwritten by (?:merge|checkout):\n((?:\t[^\n]+\n)*)(?=Aborting|Please move or remove them before you can (?:merge|switch branches)\.)/i );
-			var files = null;
 			if ( match === null ) {
 				match = out.match( /error: Untracked working tree file '([^\n]+)' would be overwritten by merge\./i );
 
@@ -180,14 +179,8 @@ class Git {
 					// no untracked files, then it just failed
 					return false;
 				}
-				else {
-					files =  [ match[ 1 ], null ];
-				}
 			}
-			else {
-				files = match[ 1 ].split( '\n' ).map( 'trim' );
-			}
-			
+
 			if ( match[ 1 ] === lastMatch1 ) {
 				console.error( 'Some untracked files are preventing the sync and can not be deleted.' );
 				return false;
@@ -195,24 +188,27 @@ class Git {
 
 			lastMatch1 = match[ 1 ];
 
-			
-			for ( var i = files.length - 2; i >= 0; --i ) {
-				var fn = files[ i ];
-				if ( fn.length === 0 ) {
-					continue;
-				}
-				fn = this._local + '/' + fn;
-				
-				console.log( 'Removing ' + fn, '.' );
-				Shelljs.rm( '-rf', fn );
-			}
+			var local = this._local + '/';
+			var files = match[ 1 ]
+				.split( '\n' )
+				.map( 'trim' )
+				.filter( ( file ) => {
+					return file.length > 0;
+				} )
+				.map( ( fn ) => {
+					return local + fn;
+				} );
+
+			console.log( 'Removing ' + files.join( ', ' ) + '.' );
+			Shelljs.rm( '-rf', files );
+
 			console.log( 'Retrying the sync.' )
 		}
 
 		return true;
 	}
 
-	localIsGit () {
+	_localIsGit () {
 		var fn = this._local + '/.git';
 		return Fs.existsSync( fn ) && Fs.statSync( fn ).isDirectory();
 	}
@@ -228,7 +224,7 @@ class Git {
 		return true;
 	}
 
-	static spawn ( cmd, args, options ) {
+	static _spawn ( cmd, args, options ) {
 		console.log( cmd, args.join( ' ' ) );
 		return ChildProcess.spawnSync( cmd, args, options );
 	}
