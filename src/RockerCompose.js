@@ -30,12 +30,25 @@ class RockerCompose {
 	}
 
 	_run ( cmd, argv ) {
-		console.log( 'Using pod definition', this._file, '.' );
+		console.log( 'Using pod definition ' + this._file + '.' );
 		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
 		var args = [ cmd, '-f', '-' ];
 		if ( argv[ 'debug-pod' ] ) {
-			console.log( 'Pod definition:', '\n--------' );
-			console.log( template, '\n^^^' );
+			var pvars = this._project.getVars();
+			var vars = this._vars;
+			console.log( '\nVars:', '\n-----' )
+			for ( var name in vars ) {
+				var value = vars[ name ];
+				if ( value instanceof Object ) {
+					console.log( name, '= >', '\n', value, '\n', pvars.render( yaml( value, pvars ) ), '\n^^^' );
+				}
+				else {
+					console.log( name, '=', pvars.render( yaml( value, pvars ) ) );
+				}
+			}
+			console.log( '^^^^^' );
+			console.log( '\nPod definition:\n--------' );
+			console.log( template, '\n^^^^^\n' );
 		}
 		if ( argv[ 'debug-pod' ] == 'more' ) {
 			args.unshift( '-verbose' );
