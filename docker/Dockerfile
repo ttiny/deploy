@@ -29,7 +29,6 @@ RUN rm -rf /app/docker /app/thirdparty
 RUN ln -sf /deploy /usr/local/bin/deploy
 
 VOLUME /app/config
-VOLUME /app/log
 EXPOSE 80
 
 WORKDIR /app
