@@ -322,7 +322,14 @@ class Deploy extends HttpApp {
 				}
 				var hostApi = this.getHostApi( remote );
 				if ( hostApi ) {
-					hostApi.getBranches( remote.splitFirst( '/' ).right, callback );
+					hostApi.getBranches( remote.splitFirst( '/' ).right, function ( err, branches ) {
+						if ( err && local.length > 0 ) {
+							console.log( 'Couldn\'t retrieve the list branches for project', project.getName(), ', using only locally known ones.' );
+							callback( null, local );
+							return;
+						}
+						callback( err, branches );
+					} );
 					return;
 				}
 			}
