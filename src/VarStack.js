@@ -11,7 +11,7 @@ class VarStack {
 	print () {
 		var vars = this._vars;
 		console.log( 'Vars:', '\n-----' )
-		for ( var i = 0, iend = vars.length; i < iend; ++i ) {
+		for ( var i = this._levels.last || 0, iend = vars.length; i < iend; ++i ) {
 			var v = vars[ i ];
 			if ( v.value instanceof Object ) {
 				console.log( v.name, '= >', '\n', v.value, '\n', this.render( yaml( v.value, this ) ), '\n^^^' );

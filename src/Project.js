@@ -159,6 +159,9 @@ class Project {
 				vars.set( 'project.' + name, vars.render( locals[ name ] ) );
 			}
 		}
+		if ( vars.get( 'project.debug' ) ) {
+			vars.print();
+		}
 
 		
 		this._branches = [];
