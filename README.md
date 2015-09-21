@@ -247,11 +247,12 @@ Variable | Description
 `{deploy.root}` | The root directory where the application itself resides.
 
 ##### Debugging
-Sometimes it is useful to be able to debug the values of your variables. If you place
-a global variable `debug: true` the globals will be printed after they are loaded.
+Sometimes it is useful to be able to debug the values of your variables. If
+you place a variable `debug: true` the variables (either global or project)
+will be printed after they are loaded.
 
-You can use something like `deploy debug --var debug=true`. Debug is not valid command
-so the program will terminate. Of course you could use real command.
+You can use something like `deploy debug --var debug=true --var project.debug=true`.
+Debug is not valid command so the program will terminate. Of course you could use real command.
 
 ##### Example
 ```yaml
@@ -410,6 +411,10 @@ and are separated with commas, without space.
 deploy <command[,command]...> <project> <branch> [--var name=value]..
 ```
 
+```sh
+deploy <command[,command]...> <project#branch> [project#branch].. [--var name=value]..
+```
+
 `--var` allows for overriding [global variables](#variables).
 
 
@@ -423,6 +428,10 @@ is not `github.com` but just lowercase `github`. This is the format used
 everywhere throughout the configuration.
 
 Passing `*` will perform the command on all projects.
+
+It is possible to pass multiple project to perform the command on, but in this
+case the branch should be given in the same argument suffixed with `#`, e.g.
+`project#branch`.
 
 #### Branch syntax
 The branch can be given as as literal name or `*`.

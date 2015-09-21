@@ -51,16 +51,12 @@ class Deploy extends HttpApp {
 		this._projects = null;
 		this._templates = null;
 		this._credentials = null;
-
 		
 		this.loadConfig();
 
 		process.exitCode = 1;
 		var argv = this.getArgv();
-		if ( argv === null ||
-		    !String.isString( argv[ 0 ] ) ||
-		    !String.isString( argv[ 1 ] ) ||
-		    !String.isString( argv[ 2 ] ) ) {
+		if ( !this.isValidArgv( argv ) ) {
 
 		    this.printUsage();
 			this.close();
@@ -78,8 +74,34 @@ class Deploy extends HttpApp {
 
 		process.exitCode = 0;
 		for ( var i = 0, iend = actions.length; i < iend; ++i ) {
-			this.doAction( actions[ i ], argv[ 1 ], argv[ 2 ] );
+			var project;
+			var argc = 0;
+			while ( project = argv[ argc++ ] ) {
+				project = project.splitFirst( '#' );
+				this.doAction( actions[ i ], project.left, project.right );
+			}
 		}
+	}
+
+	isValidArgv ( argv ) {
+		if ( argv === null ) {
+			return false;
+		}
+		var argc = 0;
+		while ( String.isString( argv[ argc ] ) ) {
+			++argc;
+		}
+		if ( argc == 3 && argv[ 1 ].indexOf( '#' ) < 0 ) {
+			argv[ 1 ] += '#' + argv[ 2 ];
+			delete argv[ 2 ];
+			return true;
+		}
+		for ( var i = argc - 1; i >= 1; --i ) {
+			if ( argv[ i ].indexOf( '#' ) < 0 ) {
+				return false;
+			}
+		}
+		return argc >= 2;
 	}
 
 	isValidAction ( name ) {
