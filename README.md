@@ -281,6 +281,7 @@ projects:
   name:
     extends: other_project
     template: true
+    labels: just some labels
     branches:
       # enabled branches for the project
     vars:
@@ -298,6 +299,7 @@ Property | Value type | Description
 `projects.name` | string | `name` here is the actual name of the project.
 `projects.name.extends` | string | A template to use for the base of this project. The properties of this project will be merged recursively with the template.
 `projects.name.template` | `true` | Indicates the project is a template to be used for base of other projects and should be excluded of normal project treatment.
+`projects.name.labels` | string | A space separated list of labels. Currently only the labels `dont-clean` and `dont-rmi` has any use - to protect projects from being cleaned by mistake when cleaning with wildcard.
 `projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
 `projects.name.repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
@@ -481,10 +483,12 @@ deploy sync <project> <branch>
 
 #### Clean
 The command will remove all local repositories for the project **without backup or confirmation.**
-If the `-rmi` flag is passed it will also remove the Docker images.
+Projects with label `dont-clean` will be skipped, unless the `-force` flag is passed.
+If the `-rmi` flag is passed it will also remove the Docker images. `-force` will also carry
+to the Docker `rmi` command.
 
 ```sh
-deploy clean <project> <branch> [-rmi [-force]]
+deploy clean <project> <branch> [-rmi] [-force]
 ```
 
 
@@ -507,6 +511,8 @@ deploy push <project> <branch>
 
 ### Remove images
 The command will remove the Docker image(s) for the specified project and branch.
+Projects with label `dont-rmi` will be skipped, unless the `-force` flag is passed.
+`-force` will also carry to the Docker `rmi` command.
 
 ```sh
 deploy rmi <project> <branch> [-force]

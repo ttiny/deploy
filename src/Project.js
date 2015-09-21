@@ -25,6 +25,7 @@ class Project {
 		this._docker = null;
 		this._pod = null;
 		this._branches = null;
+		this._labels = null;
 
 	}
 
@@ -46,6 +47,12 @@ class Project {
 	}
 
 	Clean ( argv ) {
+
+		if ( argv.force !== true && this.isCleanProtected() ) {
+			console.log( 'Skipping protected project', this._name, '.' );
+			return true;
+		}
+
 		if ( this._repo ) {
 			var repos = this._repo;
 			for ( var i = 0, iend = repos.length; i < iend; ++i ) {
@@ -70,9 +77,16 @@ class Project {
 	}
 
 	Rmi ( argv ) {
+
+		if ( argv.force !== true && this.isRmiProtected() ) {
+			console.log( 'Skipping protected project', this._name, '.' );
+			return true;
+		}
+
 		if ( this._docker === null ) {
 			throw new Error( 'Can not remove images for a project (' + this._name + ') without "docker" configuration.' );
 		}
+
 		var ret = false;
 		var dockers = this._docker;
 		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
@@ -186,6 +200,10 @@ class Project {
 			this._branches.push( '*' );
 		}
 
+		if ( this._data.labels !== undefined ) {
+			this._labels = vars.render( yaml( this._data.labels, vars ) );
+		}
+
 
 		if ( this._data.repo ) {
 			var repo = yaml( this._data.repo, vars );
@@ -215,6 +233,14 @@ class Project {
 
 	exit () {
 		this._vars.pop();
+	}
+
+	isRmiProtected () {
+		return String.isString( this._labels ) && this._labels.match( /(?:^| )dont-rmi(?:$| )/ ) !== null;
+	}
+
+	isCleanProtected () {
+		return String.isString( this._labels ) && this._labels.match( /(?:^| )dont-clean(?:$| )/ ) !== null;
 	}
 
 	isBranchAllowed ( branch ) {
