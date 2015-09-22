@@ -1,0 +1,458 @@
+Deploy baby step tutorial
+=========================
+This tutorial goes though the whole app deployment lifecycle. It goes though
+the step but doesn't ellaborate very much on each step, its purpose is to show
+the whole picture. One should seek additional information elsewhere. Basic
+knowledge of Docker and related is assumed. If you need help with that refer
+to the official Docker tutorials.
+
+<!-- MarkdownTOC -->
+
+- [Creating the application](#creating-the-application)
+- [Creating a docker image](#creating-a-docker-image)
+- [Setting up **deploy** config for the application](#setting-up-deploy-config-for-the-application)
+- [Setting up **deploy**](#setting-up-deploy)
+  - [Native installation](#native-installation)
+  - [As docker image](#as-docker-image)
+- [Syncing with **deploy**](#syncing-with-deploy)
+  - [Manually](#manually)
+  - [With webhooks](#with-webhooks)
+- [Bulding a Docker image with **deploy**](#bulding-a-docker-image-with-deploy)
+- [Running with **deploy**](#running-with-deploy)
+- [Pushing with **deploy**](#pushing-with-deploy)
+- [Cleaning up with **deploy**](#cleaning-up-with-deploy)
+- [Authors](#authors)
+
+<!-- /MarkdownTOC -->
+
+
+Creating the application
+------------------------
+We will use GitHub directly.
+
+1. Create a personal account in GitHub if you don't have one, it will be used
+   later for the webhooks too.
+
+   ![Create GitHub account](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-1.png)
+
+2. Create a new repository in your acconut.
+
+  ![Create GitHub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-2.png)
+
+  ![Create GitHub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-3.png)
+
+3. Create a new application. Our application will make a whale say something.
+   Create a new file named `myscript.sh` and enter this script in it:
+
+   ```sh
+   #!/bin/bash
+   cowsay boo
+   ```
+
+   ![Create GitHub file](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-4.png)
+
+   ![Create GitHub file](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-5.png)
+
+4. Commit the file.
+
+   ![Commit GitHub file](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-6.png)
+
+5. Cool, now we have an application. We can't test it as it is because it
+   depends on the cowsay thing, which we will install via Docker.
+
+Creating a docker image
+-----------------------
+
+1. In our repo create a new file called Dockerfile and enter this script in it
+   and commit. This makes an image derived from `docker/whalesay`, which has the
+   `cowsay` app that we depend on.
+
+   ```dockerfile
+   FROM docker/whalesay
+   COPY myscript.sh /
+   CMD sh /myscript.sh
+   ```
+
+   ![Dockerfile](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/dockerfile-1.png)
+
+
+Setting up **deploy** config for the application
+------------------------------------------------
+
+Now lets make a **deploy** config for our application. Create a file called
+`deploy.config.yml` somewhere. Normally you would put the config in
+`deploy/config/local.yml`, but here we make separete file for the tutorial. Lets show the config step by step:
+
+1. Setup our project. Lets use the path of the project as a variable because
+   we will be using it often. The image name will be used later when we build
+   and push a Docker image. The `bobi` in this name refers to my Docker Hub username
+   and should be changed accordingly.
+
+  ```yaml
+  projects:
+    deploy-tutorial:
+      vars:
+        local: /Users/bobi/Downloads/deploy-tutorial
+        image: bobi/whalesay
+  ```
+
+2. Add configuration of the repository. Notice how we spell the repo. We just
+   place `github/`, no `.com` or anything. The right side of the repo is the
+   local directory where it will be synced. This configuration is used for git syncing.
+
+  ```yaml
+  projects:
+    deploy-tutorial:
+      repo:
+        github/bobef/deploy-tutorial: ${project.local}
+  ```
+
+3. Now lets add Docker configuration for the project. This will be used when
+   building and and pushing a Docker image. Path here is where the
+   `Dockerfile` is, the same directory where we sync our project.
+   Alternatively we could place a git URL for the path, because Docker can
+   build directly from git. But building locally allows us to test and adjust
+   things and not have to push broken, untested things to git.
+
+  ```yaml
+  projects:
+    deploy-tutorial:
+      docker:
+        image: ${project.image}:{branch}
+        path: ${project.local}
+  ```
+
+4. Finally lets create a pod configuration. First add the pod to the config.
+   Notice the vars section here. It is different from the project vars section
+   \- these are vars for the pod template. So we pass the branch name forward.
+
+  ```yaml
+  projects:
+    deploy-tutorial:
+      pod:
+        path: ${project.local}
+        file: whalesay.pod.yml
+        vars:
+          image: ${project.image}
+          branch: ${branch}
+  ```
+
+  Then create the pod itself. The pod is a rocker-compose yml file. In this
+  example a very simple one. It is preparsed as
+  [Markup.js](https://github.com/adammark/Markup.js) template and this where
+  the variable substitution happens (the ones from `pod.vars`). We can create
+  this one in our git repo also.
+
+  ```yaml
+  namespace: whalesay
+  containers:
+    app:
+      image: {{image}}:{{branch}}
+  ```
+
+  ![Pod definition](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/config-1.png)
+
+  Finally our `deploy.config.yml` should look like this:
+
+  ```yaml
+  projects:
+    deploy-tutorial:
+      vars:
+        local: /Users/bobi/Downloads/deploy-tutorial
+        image: bobi/whalesay
+
+      repo:
+        github/bobef/deploy-tutorial: ${project.local}
+
+      docker:
+        image: ${project.image}:{branch}
+        path: ${project.local}
+
+      pod:
+        path: ${project.local}
+        file: whalesay.pod.yml
+        vars:
+          image: ${project.image}
+          branch: ${branch}
+  ```
+
+
+Setting up **deploy**
+---------------------
+
+We will show two ways of using **deploy**. Natively installed and as Docker
+image. Choose whichever suits you better.
+
+### Native installation
+First we need git and
+[rocker-compose](https://github.com/grammarly/rocker-compose#installation). I
+don't want to explain how to install git here, if you don't have it, you
+probably don't need to sync git repos. rocker-compose can be
+[downloaded](https://github.com/grammarly/rocker-compose/releases) as binary.
+Just extract it and put it in your path. The tested version in this tutorial
+is `0.1.0`.
+
+1. Deploy depends on node.js, until I have the time to pack it neatly and
+   distribute it as a single binary. So
+   [download](https://nodejs.org/en/download/) the node archive for your
+   OS. At least node '4.0.0'.
+2. Extract it somewhere. In this tutorial I will use the node command as just
+   `node`, but you can use it with the full path where node is extracted, e.g.
+   `/Users/bobi/Downloads/node-v4.1.0-darwin-x64/bin/node`.
+3. [Download](https://github.com/Perennials/deploy/archive/master.zip) deploy
+   and extract somewhere.
+4. Lets create a small shortcut script for **deploy**. On Unix based system
+   make a `deploy.sh` and put this inside, replacing the paths with your
+   actual ones. We pass the `--config` argument to make **deploy** always use
+   our config, or we could just place the config as `config/local.yml` inside
+   **deploy**'s folder.
+
+   ```sh
+   #!/bin/bash
+   #                                                   # #                                           #  #                                                  #
+   ################  path to node  ##################### ############  path to deploy  ###############  ########  additional arguments for deploy  #########
+   #                                                   # #                                           #  #                                                  #
+   
+   /Users/bobi/Downloads/node-v4.1.0-darwin-x64/bin/node /Users/bobi/Downloads/deploy-master/deploy.js "$@" --config /Users/bobi/Downloads/deploy.config.yml
+   ```
+
+  Then make it executable:
+  ```sh
+  chmod +x deploy.sh
+  ```
+
+   On Windows the scipt (`deploy.bat`) would look something like this (untested):
+
+   ```batch
+   @echo off
+   C:\Path\To\node C:\Users\bobi\Downloads\deploy-master\deploy.js %* --config C:\Users\bobi\Downloads\deploy.config.yml
+   ```
+
+5. Test our script.
+
+   ```sh
+   ./deploy.sh --var debug=true
+   ```
+
+   We should get output like this. Deploy will print the gobal variables and terminate because other parameters are not given.
+   ```
+   Vars: 
+   -----
+   deploy.root = /Users/bobi/Downloads/deploy-master
+   debug = true
+   ^^^^^
+   deploy <action[,action]..> <project> <branch>
+   ```
+
+### As docker image
+
+TODO
+
+
+Syncing with **deploy**
+-----------------------
+
+### Manually
+
+Use the script we have prepared in the previous step. We just tell deploy to
+sync the project deploy-tutorial and branch master. That's all. From where and
+to where to sync is read from the config file we already created.
+
+```sh
+./deploy.sh sync deploy-tutorial master
+```
+
+We should get output like this:
+
+```
+Syncing project deploy-tutorial branch master ...
+==========
+Local repo directory is /Users/bobi/Downloads/deploy-tutorial
+git clone --recursive --branch master git@github.com:bobef/deploy-tutorial.git /Users/bobi/Downloads/deploy-tutorial
+
+
+Cloning into '/Users/bobi/Downloads/deploy-tutorial'...
+
+All good.
+```
+
+### With webhooks
+
+TODO
+
+
+Bulding a Docker image with **deploy**
+--------------------------------------
+
+Start the build command. If you are running Docker on OSX or Windows, start
+this from the Docker terminal, or modify your deploy shortcut script so it will
+set some Docker environment variables.
+
+```sh
+./deploy.sh build deploy-tutorial master
+```
+
+And the output should look similar to this:
+
+```
+Building project deploy-tutorial branch master ...
+==========
+docker build --force-rm -t bobi/whalesay:master .
+Sending build context to Docker daemon 52.22 kB
+Step 0 : FROM docker/whalesay
+ ---> fb434121fc77
+Step 1 : COPY myscript.sh /
+ ---> 35dc128dd143
+Removing intermediate container f6afbc498e6b
+Step 2 : CMD sh /myscript.sh
+ ---> Running in 74a796450340
+ ---> 4828b20471bf
+Removing intermediate container 74a796450340
+Successfully built 4828b20471bf
+All good.
+```
+
+Running with **deploy**
+-----------------------
+
+Once we have built the image we can run it or push it. If you are running
+Docker on OSX or Windows, start this from the Docker terminal, or modify your
+deploy shortcut script so it will set some Docker environment variables.
+
+Start the run command:
+
+```sh
+./deploy.sh run deploy-tutorial master
+```
+
+It is using rocker-compose to run our pod. So we won't see the output of the program directly.
+
+```
+Runing project deploy-tutorial branch master ...
+==========
+Using pod definition /Users/bobi/Downloads/deploy-tutorial/whalesay.pod.yml.
+rocker-compose run -f -
+INFO[0000] Reading manifest from STDIN                  
+INFO[0000] Create container whalesay.app                
+INFO[0000] Starting container whalesay.app id:36272c4751ed from image bobi/whalesay:master 
+INFO[0000] Waiting for 1s to ensure whalesay.app not exited abnormally... 
+INFO[0001] OK, containers are running: whalesay.app     
+All good.
+```
+
+We can check the logs.
+
+```sh
+docker logs whalesay.app
+```
+
+And see our whale talking.
+
+```
+ _____ 
+< boo >
+ ----- 
+    \
+     \
+      \     
+                    ##        .            
+              ## ## ##       ==            
+           ## ## ## ##      ===            
+       /""""""""""""""""___/ ===        
+  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   
+       \______ o          __/            
+        \    \        __/             
+          \____\______/   
+```
+
+
+Pushing with **deploy**
+-----------------------
+
+Once we have built the image we can push it to some registry. We will use the
+public Docker Hub for this purpose. If you are running Docker on OSX or
+Windows, start this from the Docker terminal, or modify your deploy shortcut
+script so it will set some Docker environment variables.
+
+1. Register for free account on Docker Hub.
+
+   ![Register Docker Hub](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-1.png)
+
+2. Once you login and confirm your email you can create a new repository. This is where our image will be pushed.
+
+   ![Create Docker Hub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-2.png)
+
+   The details here should match our **deploy** config we created earlier.
+
+   ![Create Docker Hub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-3.png)
+
+   ![Create Docker Hub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-4.png)
+
+3. Finally push with deploy.
+
+   ```sh
+   ./deploy.sh run deploy-tutorial master
+   ```
+
+   The output should look similar to this:
+
+   ```
+   Pushing project deploy-tutorial branch master ...
+   ==========
+   docker push bobi/whalesay:master
+   The push refers to a repository [docker.io/bobi/whalesay] (len: 1)
+   4828b20471bf: Image successfully pushed 
+   35dc128dd143: Image successfully pushed 
+   fb434121fc77: Image already exists 
+   5d5bd9951e26: Image successfully pushed 
+   99da72cfe067: Image successfully pushed 
+   1722f41ddcb5: Image already exists 
+   5b74edbcaa5b: Image successfully pushed 
+   676c4a1897e6: Image successfully pushed 
+   07f8e8c5e660: Image already exists 
+   37bea4ee0c81: Image successfully pushed 
+   a82efea989f9: Image successfully pushed 
+   e9e06b06e14c: Image successfully pushed 
+   master: digest: sha256:519e0f8a645657df080320157e2dcc0537dea0dbf9a92f49aa6699478678d5ca size: 22081
+   All good.
+   ```
+
+   And we should have our image up in Docker Hub. Now this image can be downloaded by others.
+
+   ![Push Docker Hub](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-5.png)
+
+
+Cleaning up with **deploy**
+---------------------------
+
+Here we perform two tasks - clean (aka delete) the repo directory and remove
+the Docker image (`-rmi`). Since the image is in use by the stopped container
+from our last run, we also pass the `-force` flag.
+
+If you are running Docker on OSX or Windows, start this from the Docker
+terminal, or modify your deploy shortcut script so it will set some Docker
+environment variables.
+
+```sh
+./deploy.sh clean deploy-tutorial master -rmi -force
+```
+
+The output will look similar to this.
+
+```
+Cleaning project deploy-tutorial branch master ...
+==========
+Using pod definition /Users/bobi/Downloads/deploy-tutorial/whalesay.pod.yml.
+rocker-compose clean -f -
+INFO[0000] Reading manifest from STDIN                  
+Removing /Users/bobi/Downloads/deploy-tutorial ...
+docker rmi -f bobi/whalesay:master
+Untagged: bobi/whalesay:master
+Deleted: 07db1c937baa0b92c51898c00b581eb22d3abe56586dd1370ce94fb69e061b26
+Deleted: bd677345681ffd1112dff0c36a28f0dab0b0194a307339c31da983043455fcea
+All good.
+```
+
+Authors
+-------
+Borislav Peev (borislav.asdf at gmail dot com)
