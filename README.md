@@ -18,7 +18,7 @@ The tool performs three functions (not necessarily all of them):
 the dev environment will sync application sources in response to git webhook.
 From these sources Docker images would be built and and pushed to a registry
 and finally the images can be deployed, without sources outside the containers,
-to staging and production.
+to staging and production. For overview tutorial of this process check [here](https://github.com/Perennials/deploy/tree/master/examples/tutorial).
 
 All functionality is available via CLI or REST interface and the REST server
 also handles webhooks. Currently the webhooks from GitHub are supported with
@@ -29,6 +29,7 @@ GitLab on the way.
 - [Installation](#installation)
   - [Docker](#docker)
   - [Native](#native)
+- [Tutorial](#tutorial)
 - [CLI usage](#cli-usage)
   - [Commands](#commands)
   - [Project syntax](#project-syntax)
@@ -137,6 +138,13 @@ archive, extract it somewhere and use the `node` command from the `bin` director
 
 Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
 
+
+Tutorial
+--------
+[This tutorial](https://github.com/Perennials/deploy/tree/master/examples/tutorial)
+is meant as illustration along these docs and to show the whole picture how
+**deploy** was intended to be used. It is not a sufficient source of
+information without the docs here.
 
 CLI usage
 ---------
@@ -591,6 +599,7 @@ Property | Value type | Description
 
 #### Example
 For more examples check the [examples folder](https://github.com/Perennials/deploy/tree/master/examples). Start with `local.yml` in each folder.
+You can also check the [tutorial](#tutorial).
 
 ```yaml
 ws2:

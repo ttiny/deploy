@@ -1,7 +1,7 @@
 Deploy baby step tutorial
 =========================
-This tutorial goes though the whole app deployment lifecycle. It goes though
-the step but doesn't ellaborate very much on each step, its purpose is to show
+This tutorial goes though the whole app deployment lifecycle. It goes through
+the steps but doesn't ellaborate very much on each step, its purpose is to show
 the whole picture. One should seek additional information elsewhere. Basic
 knowledge of Docker and related is assumed. If you need help with that refer
 to the official Docker tutorials.
@@ -12,8 +12,8 @@ to the official Docker tutorials.
 - [Creating a docker image](#creating-a-docker-image)
 - [Setting up **deploy** config for the application](#setting-up-deploy-config-for-the-application)
 - [Setting up **deploy**](#setting-up-deploy)
-  - [Native installation](#native-installation)
   - [As docker image](#as-docker-image)
+  - [Native installation](#native-installation)
 - [Syncing with **deploy**](#syncing-with-deploy)
   - [Manually](#manually)
   - [With webhooks](#with-webhooks)
@@ -86,9 +86,13 @@ Now lets make a **deploy** config for our application. Create a file called
 1. Setup our project. Lets use the path of the project as a variable because
    we will be using it often. The image name will be used later when we build
    and push a Docker image. The `bobi` in this name refers to my Docker Hub username
-   and should be changed accordingly.
+   and should be changed accordingly. I override the default HTTP port here, this
+   is used when we receive webhooks.
 
   ```yaml
+  http:
+    port: 1337
+
   projects:
     deploy-tutorial:
       vars:
@@ -155,6 +159,9 @@ Now lets make a **deploy** config for our application. Create a file called
   Finally our `deploy.config.yml` should look like this:
 
   ```yaml
+  http:
+    port: 1337
+
   projects:
     deploy-tutorial:
       vars:
@@ -183,6 +190,56 @@ Setting up **deploy**
 We will show two ways of using **deploy**. Natively installed and as Docker
 image. Choose whichever suits you better.
 
+### As docker image
+
+This is the preffered way of using **deploy** because we don't need to deal
+with any dependencies. We only need Docker. Lets create a shortcut script
+because Docker CLI commands are quite lenghty. On Unix based system make a
+`deploy.sh` and put this inside, replacing the paths with your actual ones.
+
+1. Create our shortcut script, replacing the paths with your actual paths.
+   What happens here is we share our Docker config and SSH config from the host
+   with the **deploy** Docker container. We also share the directory where
+   we store our projects and configs. This is one way to do it. Another way,
+   described in **deploy**'s docs is placing the SSH key and the config in
+   a directory and binding it to `/app/config` inside the volume. We still
+   need to share the Docker config from our user directory if we want to
+   push, because Docker needs login.
+
+   ```sh
+   #!/bin/bash
+   docker run --rm -ti \
+               -v /Users/bobi/Downloads:/Users/bobi/Downloads \
+               -v /Users/bobi/.docker:/root/.docker \
+               -v /Users/bobi/.ssh:/root/.ssh \
+               -v /var/run/docker.sock:/var/run/docker.sock \
+               perennial/deploy:master \
+               deploy "$@" --config /Users/bobi/Downloads/deploy.config.yml
+   ```
+
+   Then make it executable:
+
+   ```sh
+   chmod +x deploy.sh
+   ```
+
+2. Test our script.
+
+   ```sh
+   ./deploy.sh --var debug=true
+   ```
+
+   We should get output like this. Deploy will print the gobal variables and terminate because other parameters are not given.
+   ```
+   Vars: 
+   -----
+   deploy.root = /app
+   debug = true
+   ^^^^^
+   deploy <action[,action]..> <project> <branch>
+   ```
+
+
 ### Native installation
 First we need git and
 [rocker-compose](https://github.com/grammarly/rocker-compose#installation). I
@@ -196,9 +253,7 @@ is `0.1.0`.
    distribute it as a single binary. So
    [download](https://nodejs.org/en/download/) the node archive for your
    OS. At least node '4.0.0'.
-2. Extract it somewhere. In this tutorial I will use the node command as just
-   `node`, but you can use it with the full path where node is extracted, e.g.
-   `/Users/bobi/Downloads/node-v4.1.0-darwin-x64/bin/node`.
+2. Extract it somewhere, e.g. `/Users/bobi/Downloads/node-v4.1.0-darwin-x64`.
 3. [Download](https://github.com/Perennials/deploy/archive/master.zip) deploy
    and extract somewhere.
 4. Lets create a small shortcut script for **deploy**. On Unix based system
@@ -244,10 +299,6 @@ is `0.1.0`.
    deploy <action[,action]..> <project> <branch>
    ```
 
-### As docker image
-
-TODO
-
 
 Syncing with **deploy**
 -----------------------
@@ -278,7 +329,64 @@ All good.
 
 ### With webhooks
 
-TODO
+For this to work you will need to run deploy somewhere where it is accessible from the Internet.
+
+1. Run **deploy** without any arguments. This will start a web server and listen for hooks.
+
+   ```sh
+   ./deploy.sh sync deploy-tutorial master
+   ```
+
+   We should see this message:
+
+   ```
+   Listening on 0.0.0.0:1337 ...
+   ```
+
+2. Now we need to set GitHub to send notifications to our **deploy**. Go to the repo settings about webhooks.
+
+   ![Add GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-1.png)
+
+   ![Add GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-2.png)
+
+   ![Add GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-3.png)
+
+   Add a webhook with the URL of your server. The meaning of `/deploy` is explained in **deploy**'s docs. This is the
+   default, but you can change it. The port is the one you configure or if you use the default 80, you don't need to
+   enter a port.
+
+   ![Add GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-4.png)
+
+   Save the hook.
+
+   ![Save GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-5.png)
+
+   GitHub will send a ping to the hook. **Deploy** doesn't care about pings, only about pushes, so you will get error
+   message in the output of the server.
+
+   ```
+   (1) Incomming request 192.30.252.34 2015-09-22T13:39:13.619Z .
+   (1) Unable to handle payload.
+   ```
+
+3. Lets modify one file in the repo so GitHub will send a push notification. Let's edit `myscript.sh` and change what
+   the whale is saying from `boo` to `moo`.
+
+   ![Cause GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-6.png)
+
+   Now in the output of the server we should see a successful request.
+
+   ```
+   (2) Incomming request 192.30.252.42 2015-09-22T14:01:42.645Z .
+   (2) Identified as github payload.
+   (2) Spawning deploy sync repo:github/bobef/deploy-tutorial master --config /Users/bobi/Downloads/deploy.config.yml
+   (2) All good.
+   ```
+
+   And if we go back to the repo's webhook settings, we should see in the output of **deploy** that it ran a sync and
+   updated the file `myscript.sh`.
+
+   ![Check GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-7.png)
 
 
 Bulding a Docker image with **deploy**
@@ -388,7 +496,14 @@ script so it will set some Docker environment variables.
 
    ![Create Docker Hub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-4.png)
 
-3. Finally push with deploy.
+3. Before we can push we need to login with the Docker client. Start this
+   command and it will prompt you for your credentials.
+
+   ```sh
+   docker login
+   ```
+
+4. Finally push with deploy.
 
    ```sh
    ./deploy.sh run deploy-tutorial master
