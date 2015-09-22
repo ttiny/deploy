@@ -41,7 +41,7 @@ class Deploy extends HttpApp {
 		super( DeployRequest, yaml.http.host, yaml.http.port );
 		this._yaml = yaml;
 		
-		if ( argv === null ) {
+		if ( argv === null || argv[ 0 ] === undefined ) {
 			this.doServer( yaml );
 		}
 		else {
