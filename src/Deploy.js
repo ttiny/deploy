@@ -1,12 +1,14 @@
 "use strict";
 
-var Config = require( 'App/Config' );
+require( 'Prototype' );
+
 var HttpApp = require( 'App/HttpApp' );
 var DeployRequest = require( './DeployRequest' );
 var Project = require( './Project' );
 var VarStack = require( './VarStack' );
 var Netmask = require( 'netmask' ).Netmask;
 var Path = require( 'path' );
+var Argv = require( 'App/Argv' )
 
 require( './YamlHelpers' );
 
@@ -14,16 +16,31 @@ class Deploy extends HttpApp {
 	
 	constructor () {
 
+		var argv = Argv.parse();
+
+		var localConfigs = null;
+		if ( argv && argv.config ) {
+			localConfigs = argv.config;
+		}
+		else {
+			localConfigs = __dirname + '/../config/local.yml';
+		}
+
+		if ( !(localConfigs instanceof Array) ) {
+			localConfigs = [ localConfigs ];
+		}
+
 		var yaml = LoadYaml( __dirname + '/../config.yml' );
-		var localYaml = LoadYaml( __dirname + '/../config/local.yml' );
-		if ( localYaml instanceof Object ) {
-			yaml.mergeDeep( localYaml );
+		for ( var i = 0, iend = localConfigs.length; i < iend; ++i ) {
+			var localYaml = LoadYaml( localConfigs[ i ] );
+			if ( localYaml instanceof Object ) {
+				yaml.mergeDeep( localYaml );
+			}
 		}
 
 		super( DeployRequest, yaml.http.host, yaml.http.port );
 		this._yaml = yaml;
 		
-		var argv = this.getArgv();
 		if ( argv === null ) {
 			this.doServer( yaml );
 		}

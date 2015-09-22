@@ -29,6 +29,25 @@ GitLab on the way.
 - [Installation](#installation)
   - [Docker](#docker)
   - [Native](#native)
+- [CLI usage](#cli-usage)
+  - [Commands](#commands)
+  - [Project syntax](#project-syntax)
+  - [Branch syntax](#branch-syntax)
+  - [Options](#options)
+  - [Examples](#examples)
+  - [Git commands](#git-commands)
+    - [Sync](#sync)
+    - [Clean](#clean)
+  - [Docker commands](#docker-commands)
+    - [Build](#build)
+    - [Push](#push)
+    - [Remove images](#remove-images)
+  - [Pod commands](#pod-commands)
+    - [Run](#run)
+    - [Stop](#stop)
+- [REST usage](#rest-usage)
+  - [REST syntax](#rest-syntax)
+  - [Webhooks](#webhooks)
 - [Configuration](#configuration)
   - [HTTP configuration](#http-configuration)
   - [Git authentication](#git-authentication)
@@ -44,23 +63,6 @@ GitLab on the way.
       - [Docker configuration](#docker-configuration)
       - [Pod configuration](#pod-configuration)
     - [Example](#example-1)
-- [CLI usage](#cli-usage)
-  - [Project syntax](#project-syntax)
-  - [Branch syntax](#branch-syntax)
-  - [Examples](#examples)
-  - [Git commands](#git-commands)
-    - [Sync](#sync)
-    - [Clean](#clean)
-  - [Docker commands](#docker-commands)
-    - [Build](#build)
-    - [Push](#push)
-  - [Remove images](#remove-images)
-  - [Pod commands](#pod-commands)
-    - [Run](#run)
-    - [Stop](#stop)
-- [REST usage](#rest-usage)
-  - [REST syntax](#rest-syntax)
-  - [Webhooks](#webhooks)
 - [Authors](#authors)
 
 <!-- /MarkdownTOC -->
@@ -134,6 +136,218 @@ archive, extract it somewhere and use the `node` command from the `bin` director
 4. You can start the app with `node deploy.js` or the `deploy` shell script.
 
 Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
+
+
+CLI usage
+---------
+
+The CLI syntax is to pass one or more commands to be performed on a given
+project and given branch. Multiple commands are performed in the same order
+and are separated with commas, without space.
+
+```sh
+deploy <command[,command]..> <project> <branch> [OPTIONS]..
+```
+
+```sh
+deploy <command[,command]..> <project#branch> [project#branch].. [OPTIONS]..
+```
+
+#### Commands
+
+Command is one or more of bellow:
+- [Git commands](#git-commands)
+- [Docker commands](#docker-commands)
+- [Pod commands](#pod-commands)
+
+#### Project syntax
+The project can be given as literal name, which should match the one in the configuration, as repository or as `*`.
+
+The repository syntax is `repo:host/user/repo`. For example
+`repo:github/Perennials/deploy`. Passing a repository for the project will
+perform the command on all projects related to this repository. Notice the host
+is not `github.com` but just lowercase `github`. This is the format used
+everywhere throughout the configuration.
+
+Passing `*` will perform the command on all projects.
+
+It is possible to pass multiple project to perform the command on, but in this
+case the branch should be given in the same argument suffixed with `#`, e.g.
+`project#branch`.
+
+#### Branch syntax
+The branch can be given as as literal name or `*`.
+
+Passing `*` will perform the command on all enabled branches.
+
+**Remark:** Using `*` for a branch may use the `repo` configuration of
+the project. **deploy** will use the credentials from the config to find all
+remote branches for this repo. `*` can be used on a project without `repo` configuration
+or without `credentials` configuration for the given `repo`, but only for public
+`repos` or only for the `branches` listed in the project configuration. 
+
+
+#### Options
+
+- `--var <name>=<value>` - allows for overriding [global variables](#variables).
+  May occur multiple times.
+- `--config <pathname>` - allows for loading config(s) from custom file instead
+  of `config/local.yml`. May occur multiple times and configs will be merged.
+
+
+
+#### Examples
+
+```sh
+deploy sync myproject master
+```
+
+```sh
+deploy clean,sync myproject "*"
+```
+
+```sh
+deploy sync repo:github/Perennials/deploy master
+```
+
+### Git commands
+Git commands can be performed only on projects with [repo configuration](#repo-configuration).
+
+**!!! Warning:** this functionality is only intended for mirroring remote repositories automatically.
+It will make all effort to ensure that this will not fail, including doing hard reset and deleting
+conflicting untracked files. It should not be used in a real working copy.
+
+**!!! Warning:** because of the above warning make sure you don't execute the command in a wrong local
+directory (based on the [repo config](#repo-configuration)) because `git reset` may cause loss of data.
+
+
+#### Sync
+The command will sync the repo for the specified project and branch. If the local copy does not exist,
+the repo will be cloned recursively. If a local copy exists the remote will be pulled recursively.
+
+**!!! Warning:** all local changes and conflicts will be discarded **without backup or confirmation.** 
+
+```sh
+deploy sync <project> <branch>
+```
+
+#### Clean
+The command will remove all local repositories for the project **without backup or confirmation.**
+Projects with label `dont-clean` will be skipped, unless the `-force` flag is passed.
+If the `-rmi` flag is passed it will also remove the Docker images. `-force` will also carry
+to the Docker `rmi` command.
+
+```sh
+deploy clean <project> <branch> [-rmi] [-force]
+```
+
+
+### Docker commands
+Docker commands can be performed only on projects with [docker configuration](#docker-configuration)
+
+#### Build
+The command will build the Docker image(s) for the specified project and branch.
+
+```sh
+deploy build <project> <branch>
+```
+
+#### Push
+The command will push the Docker image(s) for the specified project and branch.
+
+```sh
+deploy push <project> <branch>
+```
+
+#### Remove images
+The command will remove the Docker image(s) for the specified project and branch.
+Projects with label `dont-rmi` will be skipped, unless the `-force` flag is passed.
+`-force` will also carry to the Docker `rmi` command.
+
+```sh
+deploy rmi <project> <branch> [-force]
+```
+
+
+### Pod commands
+Pod commands can be performed only on projects with [pod configuration](#pod-configuration).
+
+#### Run
+The command will run the Docker container(s) pod for the specified project and branch.
+All non-existing host directories that are to be bound as container volumes will be
+created prior to launching the pod.
+
+```sh
+deploy run <project> <branch> [-debug-pod[=more]]
+```
+
+`-debug-pod` will print the rendered pod definition which is passed to
+rocker-compose. Adding `=more` will print even more info from rocker-compose.
+
+#### Stop
+The command will run the Docker container(s) pod for the specified project and branch.
+
+```sh
+deploy stop <project> <branch> [-debug-pod]
+```
+
+`-debug-pod` will print the rendered pod definition which is passed to
+rocker-compose.
+
+
+REST usage
+----------
+
+Starting the script without arguments will create an HTTP server according to the
+configuration and listen for REST requests or webhooks.
+
+```sh
+deploy
+```
+
+### REST syntax
+
+```
+http://myserver.com/<action>[/project[/branch]][?secret=secret-access[&flag]..]
+```
+
+The syntax for `action`, `project` and `branch` is the same in the CLI interface, with the
+addition of the `deploy` action which has special purpose for webhooks. `secret-access` may
+be used if it is allowed in the configuration.
+
+```
+http://myserver.com/sync/myproject/master
+```
+
+```
+http://myserver.com/clean,sync/myproject/*?rmi&force
+```
+
+### Webhooks
+
+Use URL like this for the webhook configuration:
+
+```
+http://myserver.com/deploy
+```
+
+Or just pass any REST URL as webhook. This is actually the REST URL for the
+`deploy` command. The `deploy` command has special purpose and is only
+available for webhooks. It means to detect the command from the webhook
+payload. In other words it will perform either `sync` or `clean` depending if
+you push something in the branch or delete the branch.
+
+With this syntax the project and the branch will also be auto detected from
+the webhook payload.
+
+Otherwise you can force specific action or specific project and/or branch. If
+the project or the branch is omitted it will be auto detected from the
+payload. For example:
+
+```
+http://myserver.com/sync/myproject/master?secret=itsme
+```
+
 
 
 Configuration
@@ -399,203 +613,6 @@ base:
   template: true
   vars:
     project.local: /apps/{project}/{branch}
-```
-
-
-CLI usage
----------
-
-The CLI syntax is to pass one or more commands to be performed on a given
-project and given branch. Multiple commands are performed in the same order
-and are separated with commas, without space.
-
-```sh
-deploy <command[,command]...> <project> <branch> [--var name=value]..
-```
-
-```sh
-deploy <command[,command]...> <project#branch> [project#branch].. [--var name=value]..
-```
-
-`--var` allows for overriding [global variables](#variables).
-
-
-#### Project syntax
-The project can be given as literal name, which should match the one in the configuration, as repository or as `*`.
-
-The repository syntax is `repo:host/user/repo`. For example
-`repo:github/Perennials/deploy`. Passing a repository for the project will
-perform the command on all projects related to this repository. Notice the host
-is not `github.com` but just lowercase `github`. This is the format used
-everywhere throughout the configuration.
-
-Passing `*` will perform the command on all projects.
-
-It is possible to pass multiple project to perform the command on, but in this
-case the branch should be given in the same argument suffixed with `#`, e.g.
-`project#branch`.
-
-#### Branch syntax
-The branch can be given as as literal name or `*`.
-
-Passing `*` will perform the command on all enabled branches.
-
-**Remark:** Using `*` for a branch may use the `repo` configuration of
-the project. **deploy** will use the credentials from the config to find all
-remote branches for this repo. `*` can be used on a project without `repo` configuration
-or without `credentials` configuration for the given `repo`, but only for public
-`repos` or only for the `branches` listed in the project configuration. 
-
-#### Examples
-
-```sh
-deploy sync myproject master
-```
-
-```sh
-deploy clean,sync myproject "*"
-```
-
-```sh
-deploy sync repo:github/Perennials/deploy master
-```
-
-### Git commands
-Git commands can be performed only on projects with [repo configuration](#repo-configuration).
-
-**!!! Warning:** this functionality is only intended for mirroring remote repositories automatically.
-It will make all effort to ensure that this will not fail, including doing hard reset and deleting
-conflicting untracked files. It should not be used in a real working copy.
-
-**!!! Warning:** because of the above warning make sure you don't execute the command in a wrong local
-directory (based on the [repo config](#repo-configuration)) because `git reset` may cause loss of data.
-
-
-#### Sync
-The command will sync the repo for the specified project and branch. If the local copy does not exist,
-the repo will be cloned recursively. If a local copy exists the remote will be pulled recursively.
-
-**!!! Warning:** all local changes and conflicts will be discarded **without backup or confirmation.** 
-
-```sh
-deploy sync <project> <branch>
-```
-
-#### Clean
-The command will remove all local repositories for the project **without backup or confirmation.**
-Projects with label `dont-clean` will be skipped, unless the `-force` flag is passed.
-If the `-rmi` flag is passed it will also remove the Docker images. `-force` will also carry
-to the Docker `rmi` command.
-
-```sh
-deploy clean <project> <branch> [-rmi] [-force]
-```
-
-
-### Docker commands
-Docker commands can be performed only on projects with [docker configuration](#docker-configuration)
-
-#### Build
-The command will build the Docker image(s) for the specified project and branch.
-
-```sh
-deploy build <project> <branch>
-```
-
-#### Push
-The command will push the Docker image(s) for the specified project and branch.
-
-```sh
-deploy push <project> <branch>
-```
-
-### Remove images
-The command will remove the Docker image(s) for the specified project and branch.
-Projects with label `dont-rmi` will be skipped, unless the `-force` flag is passed.
-`-force` will also carry to the Docker `rmi` command.
-
-```sh
-deploy rmi <project> <branch> [-force]
-```
-
-
-### Pod commands
-Pod commands can be performed only on projects with [pod configuration](#pod-configuration).
-
-#### Run
-The command will run the Docker container(s) pod for the specified project and branch.
-All non-existing host directories that are to be bound as container volumes will be
-created prior to launching the pod.
-
-```sh
-deploy run <project> <branch> [-debug-pod[=more]]
-```
-
-`-debug-pod` will print the rendered pod definition which is passed to
-rocker-compose. Adding `=more` will print even more info from rocker-compose.
-
-#### Stop
-The command will run the Docker container(s) pod for the specified project and branch.
-
-```sh
-deploy stop <project> <branch> [-debug-pod]
-```
-
-`-debug-pod` will print the rendered pod definition which is passed to
-rocker-compose.
-
-
-REST usage
-----------
-
-Starting the script without arguments will create an HTTP server according to the
-configuration and listen for REST requests or webhooks.
-
-```sh
-deploy
-```
-
-### REST syntax
-
-```
-http://myserver.com/<action>[/project[/branch]][?secret=secret-access[&flag]..]
-```
-
-The syntax for `action`, `project` and `branch` is the same in the CLI interface, with the
-addition of the `deploy` action which has special purpose for webhooks. `secret-access` may
-be used if it is allowed in the configuration.
-
-```
-http://myserver.com/sync/myproject/master
-```
-
-```
-http://myserver.com/clean,sync/myproject/*?rmi&force
-```
-
-### Webhooks
-
-Use URL like this for the webhook configuration:
-
-```
-http://myserver.com/deploy
-```
-
-Or just pass any REST URL as webhook. This is actually the REST URL for the
-`deploy` command. The `deploy` command has special purpose and is only
-available for webhooks. It means to detect the command from the webhook
-payload. In other words it will perform either `sync` or `clean` depending if
-you push something in the branch or delete the branch.
-
-With this syntax the project and the branch will also be auto detected from
-the webhook payload.
-
-Otherwise you can force specific action or specific project and/or branch. If
-the project or the branch is omitted it will be auto detected from the
-payload. For example:
-
-```
-http://myserver.com/sync/myproject/master?secret=itsme
 ```
 
 

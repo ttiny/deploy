@@ -17,6 +17,7 @@ class Git {
 	}
 
 	sync () {
+		console.log( 'Local repo directory is', this._local );
 		if ( this._localIsGit() ) {
 			return this.pull();
 		}
