@@ -26,10 +26,10 @@ GitLab on the way.
 
 <!-- MarkdownTOC -->
 
+- [Tutorial](#tutorial)
 - [Installation](#installation)
   - [Docker](#docker)
   - [Native](#native)
-- [Tutorial](#tutorial)
 - [CLI usage](#cli-usage)
   - [Commands](#commands)
   - [Project syntax](#project-syntax)
@@ -67,6 +67,14 @@ GitLab on the way.
 - [Authors](#authors)
 
 <!-- /MarkdownTOC -->
+
+
+Tutorial
+--------
+[This tutorial](https://github.com/Perennials/deploy/tree/master/examples/tutorial)
+is meant as illustration along these docs and to show the whole picture how
+**deploy** was intended to be used. It is not a sufficient source of
+information without the docs here.
 
 
 Installation
@@ -138,13 +146,6 @@ archive, extract it somewhere and use the `node` command from the `bin` director
 
 Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
 
-
-Tutorial
---------
-[This tutorial](https://github.com/Perennials/deploy/tree/master/examples/tutorial)
-is meant as illustration along these docs and to show the whole picture how
-**deploy** was intended to be used. It is not a sufficient source of
-information without the docs here.
 
 CLI usage
 ---------
