@@ -30,6 +30,12 @@ class RockerCompose {
 	}
 
 	_run ( cmd, argv ) {
+
+		if ( !Fs.existsSync( this._file ) ) {
+			console.error( 'Pod definition file', this._file, 'is not found.' );
+			return false;
+		}
+
 		console.log( 'Using pod definition ' + this._file + '.' );
 		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
 		var args = [ cmd, '-f', '-' ];

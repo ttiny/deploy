@@ -53,6 +53,11 @@ class Project {
 			return true;
 		}
 
+		if ( this._pod ) {
+			this._pod.enter();
+			var ret = this._pod.Clean( argv );
+			this._pod.exit();
+		}
 		if ( this._repo ) {
 			var repos = this._repo;
 			for ( var i = 0, iend = repos.length; i < iend; ++i ) {
@@ -64,11 +69,6 @@ class Project {
 					return ret;
 				}
 			}
-		}
-		if ( this._pod ) {
-			this._pod.enter();
-			var ret = this._pod.Clean( argv );
-			this._pod.exit();
 		}
 		if ( argv.rmi ) {
 			this.Rmi( argv );

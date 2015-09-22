@@ -215,7 +215,7 @@ class Deploy extends HttpApp {
 	}
 
 	printUsage () {
-		console.log( 'dpl <action[,action]..> <project> <branch>' );
+		console.log( 'deploy <action[,action]..> <project> <branch>' );
 	}
 
 	loadConfig () {
