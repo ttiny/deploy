@@ -87,7 +87,12 @@ Now lets make a **deploy** config for our application. Create a file called
    we will be using it often. The image name will be used later when we build
    and push a Docker image. The `bobi` in this name refers to my Docker Hub username
    and should be changed accordingly. I override the default HTTP port here, this
-   is used when we receive webhooks.
+   is used when we receive webhooks. We declare which branches we are going to use.
+   **Deploy** is able to detect the branches of your projects from GitHub, if you
+   supply it with credentials. To simplify the configuration here I declare the
+   branch so **deploy** can use this information if it is unable to get the list
+   of branches from the GitHub API. This will also prevent other branches from
+   being synced, if for example, we receive a webhook for push in another branch.
 
   ```yaml
   http:
@@ -95,6 +100,8 @@ Now lets make a **deploy** config for our application. Create a file called
 
   projects:
     deploy-tutorial:
+      branches: master
+
       vars:
         local: /Users/bobi/Downloads/deploy-tutorial
         image: bobi/whalesay
@@ -164,6 +171,8 @@ Now lets make a **deploy** config for our application. Create a file called
 
   projects:
     deploy-tutorial:
+      branches: master
+
       vars:
         local: /Users/bobi/Downloads/deploy-tutorial
         image: bobi/whalesay
