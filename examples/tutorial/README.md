@@ -218,6 +218,7 @@ because Docker CLI commands are quite lenghty. On Unix based system make a
    ```sh
    #!/bin/bash
    docker run --rm -ti \
+               -p 1337:1337 \
                -v /Users/bobi/Downloads:/Users/bobi/Downloads \
                -v /Users/bobi/.docker:/root/.docker \
                -v /Users/bobi/.ssh:/root/.ssh \
