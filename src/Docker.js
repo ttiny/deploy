@@ -20,7 +20,7 @@ class Docker {
 			options.cwd = this._path;
 			console.log( 'Local build directory is', this._path );
 		}
-		var args = [ 'build', '--force-rm', '-t', this._image ];
+		var args = [ 'build', '--force-rm=true', '-t', this._image ];
 		if ( this._file ) {
 			args.push( '-f', this._file );
 		}
