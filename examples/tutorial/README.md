@@ -1,7 +1,7 @@
 Deploy baby step tutorial
 =========================
 This tutorial goes though the whole app deployment lifecycle. It goes through
-the steps but doesn't ellaborate very much on each step, its purpose is to show
+the steps but doesn't elaborate very much on each step, its purpose is to show
 the whole picture. One should seek additional information elsewhere. Basic
 knowledge of Docker and related is assumed. If you need help with that refer
 to the official Docker tutorials.
@@ -12,12 +12,12 @@ to the official Docker tutorials.
 - [Creating a docker image](#creating-a-docker-image)
 - [Setting up **deploy** config for the application](#setting-up-deploy-config-for-the-application)
 - [Setting up **deploy**](#setting-up-deploy)
-  - [As docker image](#as-docker-image)
-  - [Native installation](#native-installation)
+	- [As Docker image](#as-docker-image)
+	- [Native installation](#native-installation)
 - [Syncing with **deploy**](#syncing-with-deploy)
-  - [Manually](#manually)
-  - [With webhooks](#with-webhooks)
-- [Bulding a Docker image with **deploy**](#bulding-a-docker-image-with-deploy)
+	- [Manually](#manually)
+	- [With webhooks](#with-webhooks)
+- [Building a Docker image with **deploy**](#building-a-docker-image-with-deploy)
 - [Running with **deploy**](#running-with-deploy)
 - [Pushing with **deploy**](#pushing-with-deploy)
 - [Cleaning up with **deploy**](#cleaning-up-with-deploy)
@@ -35,7 +35,7 @@ We will use GitHub directly.
 
    ![Create GitHub account](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-1.png)
 
-2. Create a new repository in your acconut.
+2. Create a new repository in your account.
 
   ![Create GitHub repo](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/create-2.png)
 
@@ -64,8 +64,8 @@ Creating a docker image
 -----------------------
 
 1. In our repo create a new file called Dockerfile and enter this script in it
-   and commit. This makes an image derived from `docker/whalesay`, which has the
-   `cowsay` app that we depend on.
+   and commit. This makes a Docker image derived from the image
+   `docker/whalesay`, which has the `cowsay` app that we depend on.
 
    ```dockerfile
    FROM docker/whalesay
@@ -81,18 +81,35 @@ Setting up **deploy** config for the application
 
 Now lets make a **deploy** config for our application. Create a file called
 `deploy.config.yml` somewhere. Normally you would put the config in
-`deploy/config/local.yml`, but here we make separete file for the tutorial. Lets show the config step by step:
+`deploy/config/local.yml`, but here we make separate file for the tutorial.
 
-1. Setup our project. Lets use the path of the project as a variable because
+A **deploy** project configuration consists of three independent sections.
+1. `repo` section which is used for git commands like `sync` and `clean`. Here
+   we describe which repositories to sync and where to sync them. We need this
+   section if we want to sync in response of webhooks.
+2. `docker` section which is used for Docker commands like `build` and `push`
+   and `rmi`. This is where we describe what image we are building and from
+   where.
+3. `pod` section which is used for the `run` and `stop` commands. Here we
+   describe the container pod used to run the project. Right now it is a
+   rocker-compose pod definition, it may describe one or more containers that
+   run together.
+
+
+Lets show the config step by step:
+
+1. Setup our project. Lets declare the path of the project as a variable because
    we will be using it often. The image name will be used later when we build
-   and push a Docker image. The `bobi` in this name refers to my Docker Hub username
-   and should be changed accordingly. I override the default HTTP port here, this
-   is used when we receive webhooks. We declare which branches we are going to use.
-   **Deploy** is able to detect the branches of your projects from GitHub, if you
-   supply it with credentials. To simplify the configuration here I declare the
-   branch so **deploy** can use this information if it is unable to get the list
-   of branches from the GitHub API. This will also prevent other branches from
-   being synced, if for example, we receive a webhook for push in another branch.
+   and push a Docker image. The `bobi` in this name refers to my Docker Hub
+   username and should be changed accordingly, and the path too of course. I
+   override the default HTTP port here, this is used when we receive webhooks.
+   We declare which branches we are going to use. **Deploy** is able to detect
+   the branches of your projects from GitHub, if you supply it with
+   credentials. To simplify the configuration here I declare the branch so
+   **deploy** can use this information if it is unable to get the list of
+   branches from the GitHub API. This will also prevent other branches from
+   being synced, if, for example, we receive a webhook for push in another
+   branch.
 
   ```yaml
   http:
@@ -135,7 +152,8 @@ Now lets make a **deploy** config for our application. Create a file called
 
 4. Finally lets create a pod configuration. First add the pod to the config.
    Notice the vars section here. It is different from the project vars section
-   \- these are vars for the pod template. So we pass the branch name forward.
+   \- these are vars for the pod template. So we pass the image and branch
+   names forward.
 
   ```yaml
   projects:
@@ -199,19 +217,19 @@ Setting up **deploy**
 We will show two ways of using **deploy**. Natively installed and as Docker
 image. Choose whichever suits you better.
 
-### As docker image
+### As Docker image
 
-This is the preffered way of using **deploy** because we don't need to deal
+This is the proffered way of using **deploy** because we don't need to deal
 with any dependencies. We only need Docker. Lets create a shortcut script
-because Docker CLI commands are quite lenghty. On Unix based system make a
+because Docker CLI commands are quite lengthy. On Unix based system make a
 `deploy.sh` and put this inside, replacing the paths with your actual ones.
 
 1. Create our shortcut script, replacing the paths with your actual paths.
    What happens here is we share our Docker config and SSH config from the host
    with the **deploy** Docker container. We also share the directory where
    we store our projects and configs. This is one way to do it. Another way,
-   described in **deploy**'s docs is placing the SSH key and the config in
-   a directory and binding it to `/app/config` inside the volume. We still
+   described in **deploy**'s docs, is placing the SSH key and the config in
+   a directory and binding it to `/app/config` inside the container. We still
    need to share the Docker config from our user directory if we want to
    push, because Docker needs login.
 
@@ -239,7 +257,7 @@ because Docker CLI commands are quite lenghty. On Unix based system make a
    ./deploy.sh --var debug=true
    ```
 
-   We should get output like this. Deploy will print the gobal variables and terminate because other parameters are not given.
+   We should get output like this. Deploy will print the global variables and terminate because other parameters are not given.
    ```
    Vars: 
    -----
@@ -286,7 +304,7 @@ is `0.1.0`.
   chmod +x deploy.sh
   ```
 
-   On Windows the scipt (`deploy.bat`) would look something like this (untested):
+   On Windows the script (`deploy.bat`) would look something like this (untested):
 
    ```batch
    @echo off
@@ -299,7 +317,7 @@ is `0.1.0`.
    ./deploy.sh --var debug=true
    ```
 
-   We should get output like this. Deploy will print the gobal variables and terminate because other parameters are not given.
+   We should get output like this. Deploy will print the global variables and terminate because other parameters are not given.
    ```
    Vars: 
    -----
@@ -375,11 +393,11 @@ For this to work you will need to run deploy somewhere where it is accessible fr
    message in the output of the server.
 
    ```
-   (1) Incomming request 192.30.252.34 2015-09-22T13:39:13.619Z .
+   (1) Incoming request 192.30.252.34 2015-09-22T13:39:13.619Z .
    (1) Unable to handle payload.
    ```
 
-3. Lets modify one file in the repo so GitHub will send a push notification. Let's edit `myscript.sh` and change what
+3. Lets modify one file in the repo so GitHub will send a push notification. Lets edit `myscript.sh` and change what
    the whale is saying from `boo` to `moo`.
 
    ![Cause GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-6.png)
@@ -387,7 +405,7 @@ For this to work you will need to run deploy somewhere where it is accessible fr
    Now in the output of the server we should see a successful request.
 
    ```
-   (2) Incomming request 192.30.252.42 2015-09-22T14:01:42.645Z .
+   (2) Incoming request 192.30.252.42 2015-09-22T14:01:42.645Z .
    (2) Identified as github payload.
    (2) Spawning deploy sync repo:github/bobef/deploy-tutorial master --config /Users/bobi/Downloads/deploy.config.yml
    (2) All good.
@@ -399,12 +417,12 @@ For this to work you will need to run deploy somewhere where it is accessible fr
    ![Check GitHub webhook](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/webhook-7.png)
 
 
-Bulding a Docker image with **deploy**
---------------------------------------
+Building a Docker image with **deploy**
+---------------------------------------
 
 Start the build command. If you are running Docker on OSX or Windows, start
-this from the Docker terminal, or modify your deploy shortcut script so it will
-set some Docker environment variables.
+this from the Docker terminal, or modify your deploy shortcut script so it
+will set some Docker environment variables.
 
 ```sh
 ./deploy.sh build deploy-tutorial master
@@ -443,7 +461,8 @@ Start the run command:
 ./deploy.sh run deploy-tutorial master
 ```
 
-It is using rocker-compose to run our pod. So we won't see the output of the program directly.
+It is using rocker-compose to run our pod in the background. So we won't see
+the output of the program directly.
 
 ```
 Runing project deploy-tutorial branch master ...
@@ -489,10 +508,10 @@ Pushing with **deploy**
 
 Once we have built the image we can push it to some registry. We will use the
 public Docker Hub for this purpose. If you are running Docker on OSX or
-Windows, start this from the Docker terminal, or modify your deploy shortcut
-script so it will set some Docker environment variables.
+Windows, start the commands bellow from the Docker terminal, or modify your
+deploy shortcut script so it will set some Docker environment variables.
 
-1. Register for free account on Docker Hub.
+1. Register for a free account on Docker Hub.
 
    ![Register Docker Hub](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/push-1.png)
 
@@ -550,9 +569,9 @@ script so it will set some Docker environment variables.
 Cleaning up with **deploy**
 ---------------------------
 
-Here we perform two tasks - clean (aka delete) the repo directory and remove
-the Docker image (`-rmi`). Since the image is in use by the stopped container
-from our last run, we also pass the `-force` flag.
+Here we perform two tasks - clean (aka delete) the local repo directory and
+remove the Docker image (`-rmi`). Since the image is in use by the stopped
+container from our last run, we also pass the `-force` flag.
 
 If you are running Docker on OSX or Windows, start this from the Docker
 terminal, or modify your deploy shortcut script so it will set some Docker

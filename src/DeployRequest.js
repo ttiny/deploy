@@ -54,7 +54,7 @@ class DeployRequest extends HttpAppRequest {
 		this.Response.setHeader( 'content-type', 'text/plain' );
 		this.Response.setHeader( 'connection', 'close' );
 
-		console.log( '(' + this._id + ')', 'Incomming request', this.Request.connection.remoteAddress, new Date().toISOString(), '.' );
+		console.log( '(' + this._id + ')', 'Incoming request', this.Request.connection.remoteAddress, new Date().toISOString(), '.' );
 		
 		var host = this.isKnownIp();
 		if ( host === false && !this.knowsTheSecret() ) {
