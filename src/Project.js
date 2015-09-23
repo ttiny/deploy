@@ -60,7 +60,7 @@ class Project {
 		}
 		if ( this._repo ) {
 			var repos = this._repo;
-			for ( var i = 0, iend = repos.length; i < iend; ++i ) {
+			for ( var i = repos.length - 1; i >= 0; --i ) {
 				var repo = repos[ i ];
 				repo.enter();
 				var ret = repo.Clean( argv );
