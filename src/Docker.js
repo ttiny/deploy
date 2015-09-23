@@ -18,6 +18,7 @@ class Docker {
 		var options = { stdio: 'inherit' };
 		if ( isLocal ) {
 			options.cwd = this._path;
+			console.log( 'Local build directory is', this._path );
 		}
 		var args = [ 'build', '--force-rm', '-t', this._image ];
 		if ( this._file ) {
