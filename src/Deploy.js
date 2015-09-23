@@ -165,7 +165,7 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					this.getHostApi( repo ).getBranches( repo.splitFirst( '/' ).right, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for', repo, ', skipping.' );
+							console.error( 'Couldn\'t retrieve the list of branches for', repo + ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -197,7 +197,7 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					_this.getProjectBranches( project, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for', project.getName(), ', skipping.' );
+							console.error( 'Couldn\'t retrieve the list of branches for', project.getName() + ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -339,9 +339,9 @@ class Deploy extends HttpApp {
 				}
 				var hostApi = this.getHostApi( remote );
 				if ( hostApi ) {
-					hostApi.getBranches( remote.splitFirst( '/' ).right, function ( err, branches ) {
+					hostApi.getBranches( remote.splitFirst( '/' ).right.splitFirst( '#' ).left, function ( err, branches ) {
 						if ( err && local.length > 0 ) {
-							console.log( 'Couldn\'t retrieve the list branches for project', project.getName(), ', using only locally known ones.' );
+							console.log( 'Couldn\'t retrieve the list branches for project', project.getName() + ', using only locally known ones.' );
 							callback( null, local );
 							return;
 						}
@@ -373,7 +373,7 @@ class Deploy extends HttpApp {
 				let project = projects[ name ];
 				this.getProjectBranches( project, function ( err, branches ) {
 					if ( err ) {
-						console.error( 'Couldn\'t retrieve the list of branches for project', project.getName(), ', skipping.' );
+						console.error( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
 					}
 					else {
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
