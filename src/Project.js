@@ -29,7 +29,7 @@ class Project {
 
 	}
 
-	Sync ( argv ) {
+	Sync () {
 		if ( this._repo === null ) {
 			throw new Error( 'Can not sync a project (' + this._name + ') without git "repo" configuration.' );
 		}
@@ -37,7 +37,7 @@ class Project {
 		for ( var i = 0, iend = repos.length; i < iend; ++i ) {
 			var repo = repos[ i ];
 			repo.enter();
-			var ret = repo.Sync( argv );
+			var ret = repo.Sync();
 			repo.exit();
 			if ( !ret ) {
 				return ret;
@@ -46,7 +46,9 @@ class Project {
 		return ret;
 	}
 
-	Clean ( argv ) {
+	Clean () {
+
+		var argv = this._app.getArgv();
 
 		if ( argv.force !== true && this.isCleanProtected() ) {
 			console.log( 'Skipping protected project', this._name, '.' );
@@ -55,7 +57,7 @@ class Project {
 
 		if ( this._pod ) {
 			this._pod.enter();
-			var ret = this._pod.Clean( argv );
+			var ret = this._pod.Clean();
 			this._pod.exit();
 		}
 		if ( this._repo ) {
@@ -63,7 +65,7 @@ class Project {
 			for ( var i = repos.length - 1; i >= 0; --i ) {
 				var repo = repos[ i ];
 				repo.enter();
-				var ret = repo.Clean( argv );
+				var ret = repo.Clean();
 				repo.exit();
 				if ( !ret ) {
 					return ret;
@@ -71,12 +73,14 @@ class Project {
 			}
 		}
 		if ( argv.rmi ) {
-			this.Rmi( argv );
+			this.Rmi();
 		}
 		return ret;
 	}
 
-	Rmi ( argv ) {
+	Rmi () {
+
+		var argv = this._app.getArgv();
 
 		if ( argv.force !== true && this.isRmiProtected() ) {
 			console.log( 'Skipping protected project', this._name, '.' );
@@ -92,7 +96,7 @@ class Project {
 		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
 			var docker = dockers[ i ];
 			docker.enter();
-			ret = docker.Clean( argv );
+			ret = docker.Clean();
 			docker.exit();
 			if ( !ret ) {
 				return ret;
@@ -101,7 +105,7 @@ class Project {
 		return ret;
 	}
 
-	Build ( argv ) {
+	Build () {
 		if ( this._docker === null ) {
 			throw new Error( 'Can not build a project (' + this._name + ') without "docker" configuration.' );
 		}
@@ -110,7 +114,7 @@ class Project {
 		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
 			var docker = dockers[ i ];
 			docker.enter();
-			ret = docker.Build( argv );
+			ret = docker.Build();
 			docker.exit();
 			if ( !ret ) {
 				return ret;
@@ -119,7 +123,7 @@ class Project {
 		return ret;
 	}
 
-	Push ( argv ) {
+	Push () {
 		if ( this._docker === null ) {
 			throw new Error( 'Can not push a project (' + this._name + ') without "docker" configuration.' );
 		}
@@ -128,7 +132,7 @@ class Project {
 		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
 			var docker = dockers[ i ];
 			docker.enter();
-			ret = docker.Push( argv );
+			ret = docker.Push();
 			docker.exit();
 			if ( !ret ) {
 				return ret;
@@ -137,22 +141,22 @@ class Project {
 		return ret;
 	}
 
-	Run ( argv ) {
+	Run () {
 		if ( this._pod === null ) {
 			throw new Error( 'Can not run a project (' + this._name + ') without "pod" configuration.' );
 		}
 		this._pod.enter();
-		var ret = this._pod.Run( argv );
+		var ret = this._pod.Run();
 		this._pod.exit();
 		return ret;
 	}
 
-	Stop ( argv ) {
+	Stop () {
 		if ( this._pod === null ) {
 			throw new Error( 'Can not stop a project (' + this._name + ') without "pod" configuration.' );
 		}
 		this._pod.enter();
-		var ret = this._pod.Stop( argv );
+		var ret = this._pod.Stop();
 		this._pod.exit();
 		return ret;
 	}

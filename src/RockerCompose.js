@@ -14,22 +14,25 @@ class RockerCompose {
 		this._vars = null;
 	}
 
-	Run ( argv ) {
+	Run () {
+		var argv = this._project.getApp().getArgv();
 		if ( argv.cmd ) {
 			this._vars.cmd = argv.cmd;
 		}
-		return this._run( 'run', argv );
+		return this._run( 'run' );
 	}
 
-	Stop ( argv ) {
-		return this._run( 'rm', argv );
+	Stop () {
+		return this._run( 'rm' );
 	}
 
-	Clean ( argv ) {
-		return this._run( 'clean', argv );
+	Clean () {
+		return this._run( 'clean' );
 	}
 
-	_run ( cmd, argv ) {
+	_run ( cmd ) {
+
+		var argv = this._project.getApp().getArgv();
 
 		if ( !Fs.existsSync( this._file ) ) {
 			console.error( 'Pod definition file', this._file, 'is not found.' );

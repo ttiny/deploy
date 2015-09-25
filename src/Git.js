@@ -7,13 +7,14 @@ var Github = require( './host/Github' );
 
 class Git {
 
-	constructor ( remote, local ) {
+	constructor ( remote, local, tag ) {
 
 		remote = Git.getFullRemote( remote );
 		
 		this._branch = remote.branch;
 		this._remote = remote.repo;
 		this._local = local;
+		this._isTag = tag;
 	}
 
 	sync () {
@@ -51,11 +52,11 @@ class Git {
 				var ret = Git._spawn( 'git', args, options );
 
 				if ( ret.status === 0 ) {
-					var args = [ 'fetch' ];
+					var args = [ 'fetch'/*, '--depth=1'*/ ];
 					var ret = Git._spawn( 'git', args, options );
 
 					if ( ret.status === 0 ) {
-						var ret = this._cmdWithUntrackedFiles( [ 'checkout', '-t', 'origin/' + this._branch ] );
+						var ret = this._cmdWithUntrackedFiles( [ 'checkout', ( this._isTag ? 'tags/' : 'origin/' ) + this._branch ] );
 						if ( ret === true ) {
 							return true;
 						}
@@ -65,7 +66,7 @@ class Git {
 		}
 
 		var options = { stdio: undefined, cwd: this._local };
-		var args = [ 'clone', '--recursive', '--branch', this._branch, this._remote, this._local ];
+		var args = [ 'clone', /*'--depth', '1',*/ '--recursive', '--branch', this._branch, this._remote, this._local ];
 		var ret = Git._spawn( 'git', args, options );
 
 		var out = '';
@@ -117,6 +118,48 @@ class Git {
 
 		///
 
+		if ( !this._reset() ) {
+			return false;
+		}
+
+		var options = { stdio: 'inherit', cwd: this._local };
+		var args, ret;
+
+		if ( this._isTag ) {
+			// for some reason pulling a tag fails without this
+			args = [ 'config', '--global', 'user.email', 'user@email.com' ];
+			Git._spawn( 'git', args, options );
+
+			// fetch tags since if new tag is added on the remote for the history we have and we don't have the tag, it won't work
+			args = [ 'fetch', '--tags' ];
+			Git._spawn( 'git', args, options );
+		}
+
+		ret = this._cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', /*'--depth=1',*/ 'origin', this._branch ] );
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._isTag ) {
+			// since if we already have the tag pull will do nothing - checkout
+			ret = this._cmdWithUntrackedFiles( [ 'checkout', 'tags/' + this._branch ] );
+			if ( ret === false ) {
+				return false;
+			}
+			
+			// since the tag may not be at the end of the branch reset to clean extra files and stuff
+			if ( !this._reset() ) {
+				return false;
+			}
+		}
+
+		options = { stdio: 'inherit', cwd: this._local };
+		args = [ 'submodule', 'update', '--init', '--recursive' ];
+		ret = Git._spawn( 'git', args, options );
+		return ret.status === 0;
+	}
+
+	_reset () {
 		var options = { stdio: 'inherit', cwd: this._local };
 		var args = [ 'reset', '--hard' ];
 		var ret = Git._spawn( 'git', args, options );
@@ -130,15 +173,7 @@ class Git {
 			return false;
 		}
 
-		var ret = this._cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', 'origin', this._branch ] );
-		if ( ret === false ) {
-			return false;
-		}
-
-		var options = { stdio: 'inherit', cwd: this._local };
-		var args = [ 'submodule', 'update', '--init', '--recursive' ];
-		var ret = Git._spawn( 'git', args, options );
-		return ret.status === 0;
+		return true;
 	}
 
 	_checkAuthentication () {

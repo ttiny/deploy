@@ -237,8 +237,18 @@ the repo will be cloned recursively. If a local copy exists the remote will be p
 **!!! Warning:** all local changes and conflicts will be discarded **without backup or confirmation.** 
 
 ```sh
-deploy sync <project> <branch>
+deploy sync <project> <branch> [-tag=tag]
 ```
+
+Using the option `-tag` one can specify to synchronize to a specific tag in the repo. This will work
+only for repos without explicitly specified branch in the remote URL. I.e. if the repo in the config
+is specified as 'github/Perennials/deploy#master', adding a `-tag` option will still synchronize the
+tip of the master branch. But if the remote repo is specified as `github/Perennials/deploy`, then the
+`-tag` option can be used to sync to specific tag. The reason for this behaviour is that a project
+may declare multiple repos and they will rarely have their tags synchronized. So the option to sync
+a tag is meant to be used on the main repo of the project, since it will usually match the project
+branch and it will not be explicitly specified in the remote URL.
+
 
 #### Clean
 The command will remove all local repositories for the project **without backup or confirmation.**
