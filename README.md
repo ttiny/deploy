@@ -241,7 +241,7 @@ deploy sync <project> <branch> [-tag=tag]
 ```
 
 Using the option `-tag` one can specify to synchronize to a specific tag in the repo. This will work
-only for repos without explicitly specified branch in the remote URL. I.e. if the repo in the config
+only for repos without explicitly specified branch in the remote URL. E.g. if the repo in the config
 is specified as 'github/Perennials/deploy#master', adding a `-tag` option will still synchronize the
 tip of the master branch. But if the remote repo is specified as `github/Perennials/deploy`, then the
 `-tag` option can be used to sync to specific tag. The reason for this behaviour is that a project
