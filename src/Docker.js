@@ -13,7 +13,8 @@ class Docker {
 		this._file = null;
 	}
 
-	Build ( argv ) {
+	Build () {
+		var argv = this._project.getApp().getArgv();
 		var isLocal = Fs.existsSync( this._path );
 		var options = { stdio: 'inherit' };
 		if ( isLocal ) {
@@ -40,14 +41,15 @@ class Docker {
 		return ret.status === 0;
 	}
 
-	Push ( argv ) {
+	Push () {
 		var options = { stdio: 'inherit' };
 		var args = [ 'push', this._image ];
 		var ret = Docker.spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
 
-	Clean ( argv ) {
+	Clean () {
+		var argv = this._project.getApp().getArgv();
 		var options = { stdio: 'inherit' };
 		var args = [ 'rmi' ];
 		if ( argv.force ) {
