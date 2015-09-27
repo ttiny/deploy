@@ -145,7 +145,7 @@ Lets show the config step by step:
   ```yaml
   projects:
     deploy-tutorial:
-      docker:
+      image:
         image: ${project.image}:{branch}
         path: ${project.local}
   ```
@@ -196,7 +196,7 @@ Lets show the config step by step:
       repo:
         github/bobef/deploy-tutorial: ${project.local}
 
-      docker:
+      image:
         image: ${project.image}:{branch}
         path: ${project.local}
 

@@ -38,7 +38,7 @@ projects:
       # using the project variable, it will have project. prefix
       github/Perennials/deploy: '{project.local}'
 
-    docker:
+    image:
       image: perennial/deploy:{branch}
       # start from the root
       path: '{deploy.root}'

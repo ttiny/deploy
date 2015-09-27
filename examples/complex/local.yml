@@ -23,7 +23,7 @@ projects:
       github/MyOrg/docker: '{project.local}'
 
     ### include the docker config from a file, check common-images.docker.yml
-    docker: !yamlfile 'common-images.docker.yml'
+    image: !yamlfile 'common-images.docker.yml'
 
 
 
@@ -35,7 +35,7 @@ projects:
     repo:
       github/MyOrg/ws2: /apps/{project}/{branch}
 
-    docker:
+    image:
       image: 'myorg/{project}:{branch}'
       path: '{project.local}'
 
@@ -80,7 +80,7 @@ projects:
       # then the appropriate sdk version will be downloaded
       github/MyOrg/sdk-php#{project.sdk.version}: '{project.local}/lib/sdk-php'
 
-    docker:
+    image:
       image: 'myorg/{project}:{branch}'
       path: '{project.local}'
 
