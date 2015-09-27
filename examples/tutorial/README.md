@@ -12,11 +12,11 @@ to the official Docker tutorials.
 - [Creating a docker image](#creating-a-docker-image)
 - [Setting up **deploy** config for the application](#setting-up-deploy-config-for-the-application)
 - [Setting up **deploy**](#setting-up-deploy)
-	- [As Docker image](#as-docker-image)
-	- [Native installation](#native-installation)
+  - [As Docker image](#as-docker-image)
+  - [Native installation](#native-installation)
 - [Syncing with **deploy**](#syncing-with-deploy)
-	- [Manually](#manually)
-	- [With webhooks](#with-webhooks)
+  - [Manually](#manually)
+  - [With webhooks](#with-webhooks)
 - [Building a Docker image with **deploy**](#building-a-docker-image-with-deploy)
 - [Running with **deploy**](#running-with-deploy)
 - [Pushing with **deploy**](#pushing-with-deploy)
@@ -264,7 +264,7 @@ because Docker CLI commands are quite lengthy. On Unix based system make a
    deploy.root = /app
    debug = true
    ^^^^^
-   deploy <action[,action]..> <project> <branch>
+   deploy <action[,action]..> <project[#branch]>.. [OPTIONS]..
    ```
 
 
@@ -324,7 +324,7 @@ is `0.1.0`.
    deploy.root = /Users/bobi/Downloads/deploy-master
    debug = true
    ^^^^^
-   deploy <action[,action]..> <project> <branch>
+   deploy <action[,action]..> <project[#branch]>.. [OPTIONS]..
    ```
 
 
@@ -338,7 +338,7 @@ sync the project deploy-tutorial and branch master. That's all. From where and
 to where to sync is read from the config file we already created.
 
 ```sh
-./deploy.sh sync deploy-tutorial master
+./deploy.sh sync deploy-tutorial
 ```
 
 We should get output like this:
@@ -362,7 +362,7 @@ For this to work you will need to run deploy somewhere where it is accessible fr
 1. Run **deploy** without any arguments. This will start a web server and listen for hooks.
 
    ```sh
-   ./deploy.sh sync deploy-tutorial master
+   ./deploy.sh
    ```
 
    We should see this message:
@@ -425,7 +425,7 @@ this from the Docker terminal, or modify your deploy shortcut script so it
 will set some Docker environment variables.
 
 ```sh
-./deploy.sh build deploy-tutorial master
+./deploy.sh build deploy-tutorial
 ```
 
 And the output should look similar to this:
@@ -458,7 +458,7 @@ deploy shortcut script so it will set some Docker environment variables.
 Start the run command:
 
 ```sh
-./deploy.sh run deploy-tutorial master
+./deploy.sh run deploy-tutorial
 ```
 
 It is using rocker-compose to run our pod in the background. So we won't see
@@ -535,7 +535,7 @@ deploy shortcut script so it will set some Docker environment variables.
 4. Finally push with deploy.
 
    ```sh
-   ./deploy.sh run deploy-tutorial master
+   ./deploy.sh push deploy-tutorial
    ```
 
    The output should look similar to this:
@@ -578,7 +578,7 @@ terminal, or modify your deploy shortcut script so it will set some Docker
 environment variables.
 
 ```sh
-./deploy.sh clean deploy-tutorial master -rmi -force
+./deploy.sh clean deploy-tutorial -rmi -force
 ```
 
 The output will look similar to this.

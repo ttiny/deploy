@@ -99,7 +99,7 @@ Installation
                    -v /var/run/docker.sock:/var/run/docker.sock \
                    -v /user/.docker:/root/.docker \
                    perennial/deploy:master \
-                   deploy sync "*" "*"
+                   deploy sync "*#*"
    ```
 
    Explanation:
@@ -114,11 +114,11 @@ Installation
      inside the container.
 
    Replace `/user/.docker` with your actual user directory, if you need to push, or remove this line otherwise.
-   The last three arguments (`sync "*" "*"`) is the actual deploy command, you can change it.
+   The last two arguments (`sync "*#*"`) is the actual deploy command, you can change it.
 
    Of course you will want to make this into a shell script for reuse, replacing
    the deploy arguments with `$@` and symlinking it in your path, so you can
-   just type `deploy sync my branch`... Or if you start it without arguments
+   just type `deploy sync my#branch`... Or if you start it without arguments
    it will start a web server, but you will need to add port redirect like `-p 80:80`.
 
 5. Or start an HTTP server
@@ -155,11 +155,7 @@ project and given branch. Multiple commands are performed in the same order
 and are separated with commas, without space.
 
 ```sh
-deploy <command[,command]..> <project> <branch> [OPTIONS]..
-```
-
-```sh
-deploy <command[,command]..> <project#branch> [project#branch].. [OPTIONS]..
+deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..
 ```
 
 #### Commands
@@ -180,14 +176,14 @@ everywhere throughout the configuration.
 
 Passing `*` will perform the command on all projects.
 
-It is possible to pass multiple project to perform the command on, but in this
-case the branch should be given in the same argument suffixed with `#`, e.g.
-`project#branch`.
+It is possible to pass multiple projects to perform the command on.
 
 #### Branch syntax
 The branch can be given as as literal name or `*`.
 
-Passing `*` will perform the command on all enabled branches.
+The branch can be ommited if a project is configured explicitly with a single
+branch, that is not a regular expression. Passing `*` will perform the command
+on all enabled branches.
 
 **Remark:** Using `*` for a branch may use the `repo` configuration of
 the project. **deploy** will use the credentials from the config to find all
@@ -208,15 +204,15 @@ or without `credentials` configuration for the given `repo`, but only for public
 #### Examples
 
 ```sh
-deploy sync myproject master
+deploy sync myproject#master
 ```
 
 ```sh
-deploy clean,sync myproject "*"
+deploy clean,sync myproject#"*"
 ```
 
 ```sh
-deploy sync repo:github/Perennials/deploy master
+deploy sync repo:github/Perennials/deploy#master
 ```
 
 ### Git commands
@@ -237,7 +233,7 @@ the repo will be cloned recursively. If a local copy exists the remote will be p
 **!!! Warning:** all local changes and conflicts will be discarded **without backup or confirmation.** 
 
 ```sh
-deploy sync <project> <branch> [-tag=tag]
+deploy sync <project[#branch]> [-tag=tag]
 ```
 
 Using the option `-tag` one can specify to synchronize to a specific tag in the repo. This will work
@@ -257,7 +253,7 @@ If the `-rmi` flag is passed it will also remove the Docker images. `-force` wil
 to the Docker `rmi` command.
 
 ```sh
-deploy clean <project> <branch> [-rmi] [-force]
+deploy clean <project[#branch]> [-rmi] [-force]
 ```
 
 
@@ -268,14 +264,14 @@ Docker commands can be performed only on projects with [docker configuration](#d
 The command will build the Docker image(s) for the specified project and branch.
 
 ```sh
-deploy build <project> <branch>
+deploy build <project[#branch]>
 ```
 
 #### Push
 The command will push the Docker image(s) for the specified project and branch.
 
 ```sh
-deploy push <project> <branch>
+deploy push <project[#branch]>
 ```
 
 #### Remove images
@@ -284,7 +280,7 @@ Projects with label `dont-rmi` will be skipped, unless the `-force` flag is pass
 `-force` will also carry to the Docker `rmi` command.
 
 ```sh
-deploy rmi <project> <branch> [-force]
+deploy rmi <project[#branch]> [-force]
 ```
 
 
@@ -297,7 +293,7 @@ All non-existing host directories that are to be bound as container volumes will
 created prior to launching the pod.
 
 ```sh
-deploy run <project> <branch> [-debug-pod[=more]]
+deploy run <project[#branch]> [-debug-pod[=more]]
 ```
 
 `-debug-pod` will print the rendered pod definition which is passed to
@@ -307,7 +303,7 @@ rocker-compose. Adding `=more` will print even more info from rocker-compose.
 The command will run the Docker container(s) pod for the specified project and branch.
 
 ```sh
-deploy stop <project> <branch> [-debug-pod]
+deploy stop <project[#branch]> [-debug-pod]
 ```
 
 `-debug-pod` will print the rendered pod definition which is passed to
@@ -437,7 +433,7 @@ the web APIs to determine the available branches. For this to work
 
 #### Credentials configuration
 It is not mandatory, but without it you will not be able to execute commands
-like `deploy sync myproject "*"`, or it will work only for manually defined
+like `deploy sync myproject#"*"`, or it will work only for manually defined
 branches.
 
 ##### GitHub

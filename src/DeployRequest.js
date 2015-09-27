@@ -116,7 +116,7 @@ class DeployRequest extends HttpAppRequest {
 
 		this.Response.statusCode = 200;
 
-		var args = [ process.argv[ 1 ], req.action, req.repo, req.branch ].concat( this._flags ).concat( this._appArgv );
+		var args = [ process.argv[ 1 ], req.action, req.repo + '#' + req.branch ].concat( this._flags ).concat( this._appArgv );
 		var options = { stdio: 'pipe' };
 		console.log( '(' + this._id + ')', 'Spawning deploy', args.slice( 1 ).join( ' ' ) );
 		var child = ChildProcess.spawn( process.argv[ 0 ], args, options );

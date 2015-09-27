@@ -92,7 +92,7 @@ class Deploy extends HttpApp {
 		process.exitCode = 0;
 		for ( var i = 0, iend = actions.length; i < iend; ++i ) {
 			var project;
-			var argc = 0;
+			var argc = 1;
 			while ( project = argv[ argc++ ] ) {
 				project = project.splitFirst( '#' );
 				this.doAction( actions[ i ], project.left, project.right );
@@ -108,17 +108,19 @@ class Deploy extends HttpApp {
 		while ( String.isString( argv[ argc ] ) ) {
 			++argc;
 		}
-		if ( argc == 3 && argv[ 1 ].indexOf( '#' ) < 0 ) {
-			argv[ 1 ] += '#' + argv[ 2 ];
-			delete argv[ 2 ];
-			return true;
+		if ( argc < 2 ) {
+			return false;
 		}
 		for ( var i = argc - 1; i >= 1; --i ) {
 			if ( argv[ i ].indexOf( '#' ) < 0 ) {
-				return false;
+				if ( argv[ i ].startsWith( 'repo:' ) ) {
+					console.error( 'Branch is mandatory for commands by repo (' + argv[ i ] + ').' );
+					return false;
+				}
+				argv[ i ] += '#**';
 			}
 		}
-		return argc >= 2;
+		return true;
 	}
 
 	isValidAction ( name ) {
@@ -174,21 +176,29 @@ class Deploy extends HttpApp {
 					} );
 					return;
 				}
+				else if ( branch !== undefined ) {
+					repo += '#' + branch;
+				}
 
-				repo += '#' + branch;
 				branch = '*';
 			}
 			else {
 				branch = '*';
 			}
 
-			this.findProjectsByRepo( repo, branch, handleProjects );
+			this.findProjectsByRepo( repo, branch, handleProjects.bindArgsAfter( project ) );
 		}
 		else {
-			handleProjects( null, this.findProjectsByName( project ) );
+			handleProjects( null, this.findProjectsByName( project ), project );
 		}
 
-		function handleProjects ( err, projects ) {
+		function handleProjects ( err, projects, name ) {
+
+			if ( projects.length === 0 ) {
+				console.error( 'Couldn\'t find any projects matching', name + ', skipping.' );
+				return;
+			}
+
 			action = action.toLowerCase().toFirstUpperCase();
 
 			for ( var i = 0, iend = projects.length; i < iend; ++i ) {
@@ -197,13 +207,22 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					_this.getProjectBranches( project, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for', project.getName() + ', skipping.' );
+							console.error( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
 							_this.doSingleAction( action, project, branches[ i ] );
 						}
 					} );
+				}
+				else if ( branch == '**' ) {
+					let branch = _this.getOnlyBranch( project );
+					if ( branch !== null ) {
+						_this.doSingleAction( action, project, branch );
+					}
+					else {
+						console.error( 'Couldn\'t auto decide appropriate branch for project', project.getName() + ', skipping.' );
+					}
 				}
 				else {
 					_this.doSingleAction( action, project, branch );
@@ -215,7 +234,7 @@ class Deploy extends HttpApp {
 	}
 
 	printUsage () {
-		console.log( 'deploy <action[,action]..> <project> <branch>' );
+		console.log( 'deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..' );
 	}
 
 	loadConfig () {
@@ -303,7 +322,20 @@ class Deploy extends HttpApp {
 		}
 
 		return ret;
-		
+	}
+
+	//bp: this is not in the project because atm all .enter calls are outside Project/Repo/etc
+	getOnlyBranch ( project ) {
+		project.enter( '*' );
+		var ret = null;
+		var branches = project.getBranches(); 
+		if ( branches.length == 1 ) {
+			if ( String.isString( branches[ 0 ] ) && branches[ 0 ] != '*' ) {
+				ret = branches[ 0 ];
+			}
+		}
+		project.exit();
+		return ret;
 	}
 
 	//bp: this is not in the project because atm all .enter calls are outside Project/Repo/etc
