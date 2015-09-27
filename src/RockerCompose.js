@@ -1,7 +1,6 @@
 "use strict";
 
 var ChildProcess = require( 'child_process' );
-var Mark = require( 'markup-js' );
 var Fs = require( 'fs' );
 var Shelljs = require( 'shelljs' );
 
@@ -39,9 +38,15 @@ class RockerCompose {
 			return false;
 		}
 
-		console.log( 'Using pod definition ' + this._file + '.' );
-		var template = Mark.up( Fs.readFileSync( this._file, 'utf8' ), this._vars );
-		var args = [ cmd, '-f', '-' ];
+		// console.log( 'Using pod definition ' + this._file + '.' );
+		var pvars = this._project.getVars();
+		var vars = this._vars;
+		var varscmd = [];
+		for ( var name in vars ) {
+			var value = vars[ name ];
+			varscmd.push( '-var', name + '=' + pvars.render( yaml( value, pvars ) ) );
+		}
+		var args = [ cmd, '-f', this._file ].concat( varscmd );
 		if ( argv[ 'debug-pod' ] ) {
 			var pvars = this._project.getVars();
 			var vars = this._vars;
@@ -62,11 +67,22 @@ class RockerCompose {
 		if ( argv[ 'debug-pod' ] == 'more' ) {
 			args.unshift( '-verbose' );
 		}
-		var options = { stdio: [ 'pipe', 'inherit', 'inherit' ], input: template, cwd: this._path };
+
 		if ( cmd == 'run' ) {
-			this._createVolumes( template );
+			var options = { stdio: undefined, cwd: this._path };
+			args.push( '-print' )
+			var ret = RockerCompose._spawn( 'rocker-compose', args, options, true );
+			if ( ret.status !== 0 ) {
+				console.log( 'rocker-compose', args.join( ' ' ) );
+				console.error( ret.output.join( '\n' ) );
+				return false;	
+			}
+			this._createVolumes( ret.stdout.toString( 'utf8' ) );
+			args.pop();
 		}
-		var ret = RockerCompose.spawn( 'rocker-compose', args, options );
+		
+		var options = { stdio: 'inherit', cwd: this._path };
+		var ret = RockerCompose._spawn( 'rocker-compose', args, options );
 		return ret.status === 0;
 	}
 
@@ -116,8 +132,10 @@ class RockerCompose {
 	exit () {
 	}
 
-	static spawn ( cmd, args, options ) {
-		console.log( cmd, args.join( ' ' ) );
+	static _spawn ( cmd, args, options, silent ) {
+		if ( !silent ) {
+			console.log( cmd, args.join( ' ' ) );
+		}
 		return ChildProcess.spawnSync( cmd, args, options );
 	}
 

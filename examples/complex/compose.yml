@@ -1,28 +1,26 @@
-# this file is for rocker-compose but with Markup.js templates.
-# check https://github.com/grammarly/rocker-compose
-# and https://github.com/adammark/Markup.js for more info
-namespace: {{name}}
+# this file is for rocker-compose check https://github.com/grammarly/rocker-compose
+namespace: {{.name}}
 containers:
 
   src:
-    image: myorg/{{name}}:{{version}}
+    image: myorg/{{.name}}:{{.version}}
     volumes:
-      - /volume/foo/{{name}}/{{version}}/log:/app/store/log
-      - /config/foo/{{name}}/{{version}}:/app/config
+      - /volume/foo/{{.name}}/{{.version}}/log:/app/store/log
+      - /config/foo/{{.name}}/{{.version}}:/app/config
       # if this is a dev environment use local directory for sources
-      {{if env|equals>dev}}
-      - /apps/foo/{{name}}/{{version}}:/app
-      {{/if}}
+      {{if eq .env "dev"}}
+      - /apps/foo/{{.name}}/{{.version}}:/app
+      {{end}}
 
   php:
     image: myorg/php:5.4
     volumes_from:
       - src
     volumes:
-      - /volume/foo/{{name}}/{{version}}/php:/volume/php/log
+      - /volume/foo/{{.name}}/{{.version}}/php:/volume/php/log
     env:
-      cfg.app.name: {{name}}{{version_flat}}
-      cfg.app.version: {{version}}
+      cfg.app.name: {{.name}}{{.version_flat}}
+      cfg.app.version: {{.version}}
       cfg.app.instance: ''
 
   nginx:
@@ -31,6 +29,6 @@ containers:
       - src
       - php
     volumes:
-      - /volume/foo/{{name}}/{{version}}/nginx:/volume/nginx/log
+      - /volume/foo/{{.name}}/{{.version}}/nginx:/volume/nginx/log
     ports:
-      - {{port}}:80
+      - {{.port}}:80

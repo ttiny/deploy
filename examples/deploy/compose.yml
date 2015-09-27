@@ -1,11 +1,11 @@
 namespace: deploy
 containers:
   app:
-    image: perennial/deploy:{{branch}}
+    image: perennial/deploy:{{.branch}}
     volumes:
-      - {{apps}}:/apps
-    {{if env|equals>dev}}
-      - {{root}}/config.yml:/app/config.yml
-    {{/if}}
+      - {{.apps}}:/apps
+    {{if eq .env "dev"}}
+      - {{.root}}/config.yml:/app/config.yml
+    {{end}}
     ports:
       - 1337:80

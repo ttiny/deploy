@@ -371,8 +371,7 @@ The configuration is read from `config.yml` and optionally merged with `config/l
 
 The project configuration is in flexible YAML format provided by
 [js-yaml](https://github.com/nodeca/js-yaml). The pod definitions are in YAML
-pre-parsed as [Markup.js](https://github.com/adammark/Markup.js) template,
-which is then fed to [rocker-compose](https://github.com/grammarly/rocker-compose).
+format accepted by [rocker-compose](https://github.com/grammarly/rocker-compose).
 
 Besides the custom elements provided by [js-yaml](https://github.com/nodeca/js-yaml),
 which enable specifying JavaScript regular expressions and functions inside the configuration,
@@ -585,9 +584,7 @@ Property | Value type | Description
 Describes the container pod configuration for the project. In the current
 implementation [rocker-compose](https://github.com/grammarly/rocker-compose)
 is used to start and stop the pod of containers, therefore the pod is described
-in a separate YAML file in the format accepted by rocker-compose. The file is
-preprocessed as [Markup.js](https://github.com/adammark/Markup.js) template,
-therefore rocker-compose templates should not be used.
+in a separate YAML file in the format accepted by rocker-compose.
 
 ```yaml
 pod:
@@ -601,7 +598,7 @@ Property | Value type | Description
 ---- | ---- | ----
 `pod.path` | string | **Mandatory.** Path to the pod definition file.
 `pod.file` | string | For specifying a custom pod definition file relative to the build path. The default is `compose.yml`.
-`pod.vars` | mapping | A set of variables to be substituted inside the pod definition file according to the rules of [Markup.js](https://github.com/adammark/Markup.js).
+`pod.vars` | mapping | A set of variables to be substituted inside the pod definition file according to the rules of [rocker-compose](https://github.com/grammarly/rocker-compose).
 
 
 #### Example

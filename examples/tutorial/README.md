@@ -166,17 +166,15 @@ Lets show the config step by step:
           branch: ${branch}
   ```
 
-  Then create the pod itself. The pod is a rocker-compose yml file. In this
-  example a very simple one. It is preparsed as
-  [Markup.js](https://github.com/adammark/Markup.js) template and this where
-  the variable substitution happens (the ones from `pod.vars`). We can create
-  this one in our git repo also.
+  Then create the pod itself. The pod is a rocker-compose YAML file. In this
+  example a very simple one. We can create this one in our git repo also.
 
   ```yaml
   namespace: whalesay
   containers:
     app:
-      image: {{image}}:{{branch}}
+      image: {{.image}}:{{.branch}}
+      restart: never
   ```
 
   ![Pod definition](https://raw.github.com/Perennials/deploy/master/examples/tutorial/screenshots/config-1.png)

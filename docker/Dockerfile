@@ -1,4 +1,4 @@
-FROM node:4.0
+FROM node:4.1
 MAINTAINER Borislav Peev (borislav.asdf at gmail dot com)
 
 # this is neede to install docker from https
@@ -21,14 +21,13 @@ COPY docker/deploy.sh /deploy
 COPY . /app
 
 # install our local rocker-compose copy
-RUN tar -xjC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-0.1.0_linux_amd64.tar.gz && \
+RUN tar -xzC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-*linux*.tar.gz && \
     chmod +x /usr/local/bin/rocker-compose
 
 # clean unneeded stuff
 RUN rm -rf /app/docker /app/thirdparty
 RUN ln -sf /deploy /usr/local/bin/deploy
 
-VOLUME /app/config
 EXPOSE 80
 
 WORKDIR /app
