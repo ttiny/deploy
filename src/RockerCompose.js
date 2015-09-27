@@ -39,39 +39,24 @@ class RockerCompose {
 		}
 
 		// console.log( 'Using pod definition ' + this._file + '.' );
-		var pvars = this._project.getVars();
-		var vars = this._vars;
-		var varscmd = [];
-		for ( var name in vars ) {
-			var value = vars[ name ];
-			varscmd.push( '-var', name + '=' + pvars.render( yaml( value, pvars ) ) );
-		}
-		var args = [ cmd, '-f', this._file ].concat( varscmd );
-		if ( argv[ 'debug-pod' ] ) {
-			var pvars = this._project.getVars();
-			var vars = this._vars;
-			console.log( '\nVars:', '\n-----' )
-			for ( var name in vars ) {
-				var value = vars[ name ];
-				if ( value instanceof Object ) {
-					console.log( name, '= >', '\n', value, '\n', pvars.render( yaml( value, pvars ) ), '\n^^^' );
-				}
-				else {
-					console.log( name, '=', pvars.render( yaml( value, pvars ) ) );
-				}
-			}
-			console.log( '^^^^^' );
-			console.log( '\nPod definition:\n--------' );
-			console.log( template, '\n^^^^^\n' );
+		var args = [ cmd, '-f', this._file ];
+		for ( var name in this._vars ) {
+			args.push( '-var', name + '=' + this._vars[ name ] );
 		}
 		if ( argv[ 'debug-pod' ] == 'more' ) {
 			args.unshift( '-verbose' );
 		}
-
+		if ( argv[ 'debug-pod' ] ) {
+			args.push( '-print' )
+			var options = { stdio: 'inherit', cwd: this._path };
+			RockerCompose._spawn( 'rocker-compose', args, options );
+			args.pop();
+			console.log( '' );
+		}
 		if ( cmd == 'run' ) {
 			var options = { stdio: undefined, cwd: this._path };
 			args.push( '-print' )
-			var ret = RockerCompose._spawn( 'rocker-compose', args, options, true );
+			var ret = RockerCompose._spawn( 'rocker-compose', args, options, !argv[ 'debug-pod' ] );
 			if ( ret.status !== 0 ) {
 				console.log( 'rocker-compose', args.join( ' ' ) );
 				console.error( ret.output.join( '\n' ) );

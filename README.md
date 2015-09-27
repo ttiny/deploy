@@ -9,8 +9,8 @@ The tool performs three functions (not necessarily all of them):
 
 1. [Synchronizes](#git-commands) local git repositori(es), possibly triggered
    by a [webhook](#rest-usage).
-2. [Builds](#docker-commands) Docker images and pushes them to a Docker
-   registry.
+2. [Builds](#image-commands) Docker images and pushes them to a Docker
+   registry (optionally and experimentally with [rocker](https://github.com/grammarly/rocker)).
 3. [Runs](#pod-commands) Docker container pods (currently with
    [rocker-compose](https://github.com/grammarly/rocker-compose)).
 
@@ -39,7 +39,7 @@ GitLab on the way.
   - [Git commands](#git-commands)
     - [Sync](#sync)
     - [Clean](#clean)
-  - [Docker commands](#docker-commands)
+  - [Image commands](#image-commands)
     - [Build](#build)
     - [Push](#push)
     - [Remove images](#remove-images)
@@ -61,7 +61,7 @@ GitLab on the way.
     - [Projects](#projects)
       - [Variables](#variables-1)
       - [Repo configuration](#repo-configuration)
-      - [Docker configuration](#docker-configuration)
+      - [Image configuration](#image-configuration)
       - [Pod configuration](#pod-configuration)
     - [Example](#example-1)
 - [Authors](#authors)
@@ -144,7 +144,7 @@ archive, extract it somewhere and use the `node` command from the `bin` director
 2. Extract somewhere, open a shell and cd to that directory.
 4. You can start the app with `node deploy.js` or the `deploy` shell script.
 
-Make sure you have git, docker and rocker-compose installed, so **deploy** can start them!
+Make sure you have git, docker, rocker and rocker-compose installed, so **deploy** can start them!
 
 
 CLI usage
@@ -162,7 +162,7 @@ deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..
 
 Command is one or more of bellow:
 - [Git commands](#git-commands)
-- [Docker commands](#docker-commands)
+- [Image commands](#image-commands)
 - [Pod commands](#pod-commands)
 
 #### Project syntax
@@ -257,15 +257,22 @@ deploy clean <project[#branch]> [-rmi] [-force]
 ```
 
 
-### Docker commands
-Docker commands can be performed only on projects with [docker configuration](#docker-configuration)
+### Image commands
+Image commands can be performed only on projects with [Image configuration](#image-configuration)
 
 #### Build
 The command will build the Docker image(s) for the specified project and branch.
 
 ```sh
-deploy build <project[#branch]>
+deploy build <project[#branch]> [-pull] [-no-cache] [-debug-image] [-push] [-attach]
 ```
+
+`-pull` and `-no-cache` is passed to both docker and rocker as `--pull` and `--no-cache`.
+
+The `-debug-image` flag is used with only with rocker to print the `Rockerfile` after
+the variables has been substitued.
+
+`-attach` and `-push` are passed to rocker only as `--atach` and `--push`.
 
 #### Push
 The command will push the Docker image(s) for the specified project and branch.
@@ -516,8 +523,8 @@ projects:
       # project specific variables
     repo:
       # repo configuration for the project
-    docker:
-      # docker configuration for the project
+    image:
+      # docker image configuration for the project
     pod:
       # pod configuration for the project
 ```
@@ -531,7 +538,7 @@ Property | Value type | Description
 `projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
 `projects.name.repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
-`projects.name.docker` | mapping\|mapping[] | Docker configuration for the project. [See bellow](#docker-configuration).
+`projects.name.image` | mapping\|mapping[] | Docker image configuration for the project. [See bellow](#docker-configuration).
 `projects.name.pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
 
 ###### Variables
@@ -562,23 +569,28 @@ repo:
   host/user/repo#branch:local_directory
 ```
 
-##### Docker configuration
+##### Image configuration
 Describes the Docker image(s) for this project. Can be a mapping or array of mappings.
 
 ```yaml
-docker:
+image:
   image: name:tag
   path: build_path
   file: build_file
+  rocker: bool
+  vars:
+    ## Rockerfile template variables
 ```
 
 The `image` will be used for the `build` and `push` actions. `path` and `file` will be used only for building.
 
 Property | Value type | Description
 ---- | ---- | ----
-`docker.image` | string | **Mandatory.** Name and tag for the docker image of this project.
-`docker.path` | string | **Mandatory for `build`.** Build path for the Docker image. Can be local path or URL as accepted by [Docker build](https://docs.docker.com/reference/commandline/build/).
-`docker.file` | string | For specifying a custom `Dockerfile` relative to the build path. The default is `Dockerfile`.
+`image.image` | string | **Mandatory.** Name and tag for the docker image of this project.
+`image.path` | string | **Mandatory for `build`.** Build path for the Docker image. Can be local path or URL as accepted by [Docker build](https://docs.docker.com/reference/commandline/build/).
+`image.file` | string | For specifying a custom `Dockerfile` or `Rockerfile` relative to the build path. The default is `Dockerfile` or `Rockerfile` if rocker is used.
+`image.rocker` | bool | If to use rocker instead of docker for building the image. The default is `false`. This does not need to be specified explictly when a file is specified and it is named `Rockerfile`.
+`image.vars` | mapping | A set of variables to be substituted inside the `Rockerfile` file according to the rules of [rocker](https://github.com/grammarly/rocker).
 
 ##### Pod configuration
 Describes the container pod configuration for the project. In the current
@@ -614,7 +626,7 @@ ws2:
     ### will sync from this repo   to this local directory
     github/Perennials/ws2:         '{project.local}'
   
-  docker:
+  image:
     ### name of docker image
     image: perennial.custom.registry/{project}:{branch}
     ### path for building the image

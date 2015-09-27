@@ -1,7 +1,7 @@
 "use strict";
 
 var RockerCompose = require( './RockerCompose' );
-var Docker = require( './Docker' );
+var Rocker = require( './Rocker' );
 var Repo = require( './Repo' );
 
 class Project {
@@ -22,7 +22,7 @@ class Project {
 		this._data = data;
 		this._name = data.name;
 		this._repo = null;
-		this._docker = null;
+		this._image = null;
 		this._pod = null;
 		this._branches = null;
 		this._labels = null;
@@ -87,17 +87,17 @@ class Project {
 			return true;
 		}
 
-		if ( this._docker === null ) {
-			throw new Error( 'Can not remove images for a project (' + this._name + ') without "docker" configuration.' );
+		if ( this._image === null ) {
+			throw new Error( 'Can not remove images for a project (' + this._name + ') without "image" configuration.' );
 		}
 
 		var ret = false;
-		var dockers = this._docker;
-		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
-			var docker = dockers[ i ];
-			docker.enter();
-			ret = docker.Clean();
-			docker.exit();
+		var rockers = this._image;
+		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
+			var rocker = rockers[ i ];
+			rocker.enter();
+			ret = rocker.Clean();
+			rocker.exit();
 			if ( !ret ) {
 				return ret;
 			}
@@ -106,16 +106,16 @@ class Project {
 	}
 
 	Build () {
-		if ( this._docker === null ) {
-			throw new Error( 'Can not build a project (' + this._name + ') without "docker" configuration.' );
+		if ( this._image === null ) {
+			throw new Error( 'Can not build a project (' + this._name + ') without "image" configuration.' );
 		}
 		var ret = false;
-		var dockers = this._docker;
-		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
-			var docker = dockers[ i ];
-			docker.enter();
-			ret = docker.Build();
-			docker.exit();
+		var rockers = this._image;
+		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
+			var rocker = rockers[ i ];
+			rocker.enter();
+			ret = rocker.Build();
+			rocker.exit();
 			if ( !ret ) {
 				return ret;
 			}
@@ -124,16 +124,16 @@ class Project {
 	}
 
 	Push () {
-		if ( this._docker === null ) {
-			throw new Error( 'Can not push a project (' + this._name + ') without "docker" configuration.' );
+		if ( this._image === null ) {
+			throw new Error( 'Can not push a project (' + this._name + ') without "image" configuration.' );
 		}
 		var ret = false;
-		var dockers = this._docker;
-		for ( var i = 0, iend = dockers.length; i < iend; ++i ) {
-			var docker = dockers[ i ];
-			docker.enter();
-			ret = docker.Push();
-			docker.exit();
+		var rockers = this._image;
+		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
+			var rocker = rockers[ i ];
+			rocker.enter();
+			ret = rocker.Push();
+			rocker.exit();
 			if ( !ret ) {
 				return ret;
 			}
@@ -217,16 +217,16 @@ class Project {
 			}
 		}
 
-		if ( this._data.docker ) {
-			var docker = yaml( this._data.docker, vars );
-			if ( docker instanceof Array ) {
-				this._docker = [];
-				for ( var i = 0, iend = docker.length; i < iend; ++i ) {
-					this._docker.push( new Docker( this, yaml( docker[ i ], vars ) ) );
+		if ( this._data.image ) {
+			var rocker = yaml( this._data.image, vars );
+			if ( rocker instanceof Array ) {
+				this._image = [];
+				for ( var i = 0, iend = rocker.length; i < iend; ++i ) {
+					this._image.push( new Rocker( this, yaml( rocker[ i ], vars ) ) );
 				}
 			}
 			else {
-				this._docker = [ new Docker( this, docker ) ];
+				this._image = [ new Rocker( this, rocker ) ];
 			}
 		}
 		

@@ -24,6 +24,10 @@ COPY . /app
 RUN tar -xzC /usr/local/bin -f /app/thirdparty/rocker-compose/rocker-compose-*linux*.tar.gz && \
     chmod +x /usr/local/bin/rocker-compose
 
+# install our local rocker copy
+RUN tar -xzC /usr/local/bin -f /app/thirdparty/rocker/rocker-*linux*.tar.gz && \
+    chmod +x /usr/local/bin/rocker
+
 # clean unneeded stuff
 RUN rm -rf /app/docker /app/thirdparty
 RUN ln -sf /deploy /usr/local/bin/deploy

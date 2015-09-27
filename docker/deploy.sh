@@ -15,5 +15,10 @@ if [[ -f /app/config/id_rsa ]]; then
 	eval ssh-add /app/config/id_rsa $DEBUG
 fi
 
+if [[ -f /app/config/known_hosts ]]; then
+	# custom known hosts
+	cat /app/config/known_hosts >> /root/.ssh/known_hosts
+fi
+
 # listen for deploy requests
 exec node /app/deploy.js "$@"

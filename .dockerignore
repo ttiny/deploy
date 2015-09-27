@@ -8,3 +8,4 @@ examples
 !docker/deploy.sh
 !docker/known_hosts
 !thirdparty/rocker-compose/rocker-compose-*linux*
+!thirdparty/rocker/rocker-*linux*

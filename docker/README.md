@@ -22,6 +22,7 @@ Volumes
 ### Config
 - The config file `local.yml` will be loaded from the config volume.
 - The SSH key `id_rsa` will be added to the SSH agent, if it is found in the config volume.
+- The file `known_hosts` will be appended to the SSH `known_hosts`.
 
 ```
 /app/config
