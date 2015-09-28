@@ -85,6 +85,10 @@ class Rocker {
 		return ret.status === 0;
 	}
 
+	filter ( image ) {
+		return this._image.match( new RegExp( '^' + image.replace( /\*/g, '.*' ) + '$' ) ) !== null;
+	}
+
 	enter () {
 
 		var vars = this._project.getVars();

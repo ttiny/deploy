@@ -16,7 +16,7 @@
 ### but if you provide secret access, docker_host:1337/deploy/asd/qwe?itsme, you should see something
 ### it means deploy is not valid action
 
-### 5. ok, time to go. stop and clean up ./deploy stop,clean deploy master -rmi
+### 5. ok, time to go. stop and clean up ./deploy stop,clean,rmi deploy master
 
 secret-access: itsme
 

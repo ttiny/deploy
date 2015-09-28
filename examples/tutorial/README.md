@@ -567,8 +567,8 @@ deploy shortcut script so it will set some Docker environment variables.
 Cleaning up with **deploy**
 ---------------------------
 
-Here we perform two tasks - clean (aka delete) the local repo directory and
-remove the Docker image (`-rmi`). Since the image is in use by the stopped
+Here we perform two tasks - `clean` (aka delete) the local repo directory and
+remove the Docker image (`rmi`). Since the image is in use by the stopped
 container from our last run, we also pass the `-force` flag.
 
 If you are running Docker on OSX or Windows, start this from the Docker
@@ -576,7 +576,7 @@ terminal, or modify your deploy shortcut script so it will set some Docker
 environment variables.
 
 ```sh
-./deploy.sh clean deploy-tutorial -rmi -force
+./deploy.sh clean,rmi deploy-tutorial -force
 ```
 
 The output will look similar to this.

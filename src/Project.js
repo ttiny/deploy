@@ -26,23 +26,45 @@ class Project {
 		this._pod = null;
 		this._branches = null;
 		this._labels = null;
+		this._events = null;
 
+	}
+
+	notify ( event ) {
+		var events = this._events[ event ];
+		if ( events === undefined ) {
+			return;
+		}
+
+		var vars = this._vars;
+
+		for ( var i = 0, iend = events.length; i < iend; ++i ) {
+			console.log( vars.render( yaml( events[ i ], vars ) ) );
+		}
 	}
 
 	Sync () {
 		if ( this._repo === null ) {
 			throw new Error( 'Can not sync a project (' + this._name + ') without git "repo" configuration.' );
 		}
+
+		var argv = this._app.getArgv();
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'sync.start' );
+		var ret = true;
 		var repos = this._repo;
-		for ( var i = 0, iend = repos.length; i < iend; ++i ) {
+		for ( var i = 0, iend = repos.length; ret && i < iend; ++i ) {
 			var repo = repos[ i ];
 			repo.enter();
-			var ret = repo.Sync();
-			repo.exit();
-			if ( !ret ) {
-				return ret;
+			if ( !filter || repo.filter( filter ) ) {
+				ret = repo.Sync();
 			}
+			repo.exit();
 		}
+		this.notify( ret ? 'sync.success' : 'sync.error' );
+		this.notify( 'sync.finish' );
 		return ret;
 	}
 
@@ -55,26 +77,29 @@ class Project {
 			return true;
 		}
 
+
+		this.notify( 'clean.start' );
+		var ret = true;
 		if ( this._pod ) {
 			this._pod.enter();
 			var ret = this._pod.Clean();
 			this._pod.exit();
 		}
 		if ( this._repo ) {
+			var vars = this._vars;
+			var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
 			var repos = this._repo;
-			for ( var i = repos.length - 1; i >= 0; --i ) {
+			for ( var i = repos.length - 1; ret && i >= 0; --i ) {
 				var repo = repos[ i ];
 				repo.enter();
-				var ret = repo.Clean();
-				repo.exit();
-				if ( !ret ) {
-					return ret;
+				if ( !filter || repo.filter( filter ) ) {
+					ret = repo.Clean();
 				}
+				repo.exit();
 			}
 		}
-		if ( argv.rmi ) {
-			this.Rmi();
-		}
+		this.notify( ret ? 'clean.success' : 'clean.error' );
+		this.notify( 'clean.finish' );
 		return ret;
 	}
 
@@ -91,17 +116,22 @@ class Project {
 			throw new Error( 'Can not remove images for a project (' + this._name + ') without "image" configuration.' );
 		}
 
-		var ret = false;
-		var rockers = this._image;
-		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
-			var rocker = rockers[ i ];
-			rocker.enter();
-			ret = rocker.Clean();
-			rocker.exit();
-			if ( !ret ) {
-				return ret;
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'rmi.start' );
+		var ret = true;
+		var images = this._image;
+		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+			var image = images[ i ];
+			image.enter();
+			if ( !filter || image.filter( filter ) ) {
+				ret = image.Clean();
 			}
+			image.exit();
 		}
+		this.notify( ret ? 'rmi.success' : 'rmi.error' );
+		this.notify( 'rmi.finish' );
 		return ret;
 	}
 
@@ -109,17 +139,24 @@ class Project {
 		if ( this._image === null ) {
 			throw new Error( 'Can not build a project (' + this._name + ') without "image" configuration.' );
 		}
-		var ret = false;
-		var rockers = this._image;
-		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
-			var rocker = rockers[ i ];
-			rocker.enter();
-			ret = rocker.Build();
-			rocker.exit();
-			if ( !ret ) {
-				return ret;
+
+		var argv = this._app.getArgv();
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'build.start' );
+		var ret = true;
+		var images = this._image;
+		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+			var image = images[ i ];
+			image.enter();
+			if ( !filter || image.filter( filter ) ) {
+				ret = image.Build();
 			}
+			image.exit();
 		}
+		this.notify( ret ? 'build.success' : 'build.error' );
+		this.notify( 'build.finish' );
 		return ret;
 	}
 
@@ -127,17 +164,25 @@ class Project {
 		if ( this._image === null ) {
 			throw new Error( 'Can not push a project (' + this._name + ') without "image" configuration.' );
 		}
-		var ret = false;
-		var rockers = this._image;
-		for ( var i = 0, iend = rockers.length; i < iend; ++i ) {
-			var rocker = rockers[ i ];
-			rocker.enter();
-			ret = rocker.Push();
-			rocker.exit();
-			if ( !ret ) {
-				return ret;
+
+		var argv = this._app.getArgv();
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'push.start' );
+
+		var ret = true;
+		var images = this._image;
+		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+			var image = images[ i ];
+			image.enter();
+			if ( !filter || image.filter( filter ) ) {
+				ret = image.Push();
 			}
+			image.exit();
 		}
+		this.notify( ret ? 'push.success' : 'push.error' );
+		this.notify( 'push.finish' );
 		return ret;
 	}
 
@@ -145,9 +190,12 @@ class Project {
 		if ( this._pod === null ) {
 			throw new Error( 'Can not run a project (' + this._name + ') without "pod" configuration.' );
 		}
+		this.notify( 'run.start' );
 		this._pod.enter();
 		var ret = this._pod.Run();
 		this._pod.exit();
+		this.notify( ret ? 'run.success' : 'run.error' );
+		this.notify( 'run.finish' );
 		return ret;
 	}
 
@@ -155,9 +203,12 @@ class Project {
 		if ( this._pod === null ) {
 			throw new Error( 'Can not stop a project (' + this._name + ') without "pod" configuration.' );
 		}
+		this.notify( 'stop.start' );
 		this._pod.enter();
 		var ret = this._pod.Stop();
 		this._pod.exit();
+		this.notify( ret ? 'stop.success' : 'stop.error' );
+		this.notify( 'stop.finish' );
 		return ret;
 	}
 
@@ -218,20 +269,35 @@ class Project {
 		}
 
 		if ( this._data.image ) {
-			var rocker = yaml( this._data.image, vars );
-			if ( rocker instanceof Array ) {
+			var image = yaml( this._data.image, vars );
+			if ( image instanceof Array ) {
 				this._image = [];
-				for ( var i = 0, iend = rocker.length; i < iend; ++i ) {
-					this._image.push( new Rocker( this, yaml( rocker[ i ], vars ) ) );
+				for ( var i = 0, iend = image.length; i < iend; ++i ) {
+					this._image.push( new Rocker( this, yaml( image[ i ], vars ) ) );
 				}
 			}
 			else {
-				this._image = [ new Rocker( this, rocker ) ];
+				this._image = [ new Rocker( this, image ) ];
 			}
 		}
 		
 		if ( this._data.pod ) {
 			this._pod = new RockerCompose( this, yaml( this._data.pod, vars ) );
+		}
+
+		this._events = {};
+		if ( this._data.events ) {
+			var events = yaml( this._data.events, vars );
+			for ( var key in events ) {
+				if ( this._events[ key ] === undefined ) {
+					this._events[ key ] = [];
+				}
+				var event = events[ key ];
+				if ( !(event instanceof Array) ) {
+					event = [ event ];
+				}
+				this._events[ key ] = this._events[ key ].concat( event );
+			}
 		}
 	}
 

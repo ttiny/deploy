@@ -67,6 +67,10 @@ class Repo {
 		return this._project;
 	}
 
+	filter ( repo ) {
+		return this.isUsingRepo( repo );
+	}
+
 	isUsingRepo ( repo ) {
 
 		var src = Git.getFullRemote( this._remote );

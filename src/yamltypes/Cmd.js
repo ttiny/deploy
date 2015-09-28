@@ -12,7 +12,9 @@ class Cmd extends DeferredYaml {
 	}
 	
 	resolve ( vars ) {
-		return ChildProcess.execSync( vars.render( this._cmd ), { stdio: 'pipe' } ).toString( 'utf8' );
+		var cmd = vars.render( this._cmd );
+		console.log( cmd );
+		return ChildProcess.execSync( cmd, { stdio: 'pipe' } ).toString( 'utf8' );
 	}
 }
 

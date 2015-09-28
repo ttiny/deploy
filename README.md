@@ -60,6 +60,7 @@ GitLab on the way.
       - [Example](#example)
     - [Projects](#projects)
       - [Variables](#variables-1)
+      - [Events](#events)
       - [Repo configuration](#repo-configuration)
       - [Image configuration](#image-configuration)
       - [Pod configuration](#pod-configuration)
@@ -229,11 +230,12 @@ directory (based on the [repo config](#repo-configuration)) because `git reset` 
 #### Sync
 The command will sync the repo for the specified project and branch. If the local copy does not exist,
 the repo will be cloned recursively. If a local copy exists the remote will be pulled recursively.
+The `filter` flag can be used when multiple repos are specified in the config.
 
 **!!! Warning:** all local changes and conflicts will be discarded **without backup or confirmation.** 
 
 ```sh
-deploy sync <project[#branch]> [-tag=tag]
+deploy sync <project[#branch]> [-tag=tag] [-filter=repo]
 ```
 
 Using the option `-tag` one can specify to synchronize to a specific tag in the repo. This will work
@@ -249,11 +251,10 @@ branch and it will not be explicitly specified in the remote URL.
 #### Clean
 The command will remove all local repositories for the project **without backup or confirmation.**
 Projects with label `dont-clean` will be skipped, unless the `-force` flag is passed.
-If the `-rmi` flag is passed it will also remove the Docker images. `-force` will also carry
-to the Docker `rmi` command.
+The `filter` flag can be used when multiple repos are specified in the config.
 
 ```sh
-deploy clean <project[#branch]> [-rmi] [-force]
+deploy clean <project[#branch]> [-force] [-filter=repo]
 ```
 
 
@@ -264,7 +265,7 @@ Image commands can be performed only on projects with [Image configuration](#ima
 The command will build the Docker image(s) for the specified project and branch.
 
 ```sh
-deploy build <project[#branch]> [-pull] [-no-cache] [-debug-image] [-push] [-attach]
+deploy build <project[#branch]> [-pull] [-no-cache] [-debug-image] [-push] [-attach] [-filter=image]
 ```
 
 `-pull` and `-no-cache` is passed to both docker and rocker as `--pull` and `--no-cache`.
@@ -276,18 +277,20 @@ the variables has been substitued.
 
 #### Push
 The command will push the Docker image(s) for the specified project and branch.
+The `filter` flag can be used when multiple images are specified, it can include wildcards.
 
 ```sh
-deploy push <project[#branch]>
+deploy push <project[#branch]> [-filter=image]
 ```
 
 #### Remove images
 The command will remove the Docker image(s) for the specified project and branch.
 Projects with label `dont-rmi` will be skipped, unless the `-force` flag is passed.
-`-force` will also carry to the Docker `rmi` command.
+`-force` will also carry to the Docker `rmi` command. The `filter` flag can be used
+when multiple images are specified, it can include wildcards.
 
 ```sh
-deploy rmi <project[#branch]> [-force]
+deploy rmi <project[#branch]> [-force] [-filter=image]
 ```
 
 
@@ -390,6 +393,7 @@ given context. The custom types provided by **deploy** are:
 Property | Description
 ---- | ----
 `!cmd command` | Will execute a shell command and use its output as a value.
+`!echo text` | Will echo the text to the console.
 `!yamlfile file` | Will parse a YAML file and incorporate its contents in the document.
 `!yamlfiles pattern` | Will parse all YAML files matching the pattern and incorporate their contents in the document. If all files contain mappings the return value will be a a merged mapping, otherwise an array of all the values.
 `!textfile file` | Will read a file as a plain text and use it as a value.
@@ -521,6 +525,8 @@ projects:
       # enabled branches for the project
     vars:
       # project specific variables
+    events:
+      # project specific event handlers
     repo:
       # repo configuration for the project
     image:
@@ -537,6 +543,7 @@ Property | Value type | Description
 `projects.name.labels` | string | A space separated list of labels. Currently only the labels `dont-clean` and `dont-rmi` has any use - to protect projects from being cleaned by mistake when cleaning with wildcard.
 `projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
+`projects.name.events` | mapping | A list of project specific event handlers. These are some commands that will be executed upon some event ([see bellow](#events)).
 `projects.name.repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
 `projects.name.image` | mapping\|mapping[] | Docker image configuration for the project. [See bellow](#docker-configuration).
 `projects.name.pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
@@ -552,6 +559,30 @@ Variable | Description
 `{branch.tag}` | Name of the current branch according to Docker's convention. Put simply this will be `latest` for branch named `master`, otherwise will be the same as `{branch}`.
 `{branch.flat}` | Name of the current branch with all non-word and non-digit characters removed. E.g. for branch `1.1` this will be `11`.
 
+###### Events
+
+Projects support events. Events are executed before and after each command. The name of the event is composed from the name of the command (`sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`) and a suffix:
+
+
+Event | Description
+---- | ----
+`command.start` | Will be fired before a command is performed.
+`command.error` | Will be fired after a command is performed if it results in error.
+`command.success` | Will be fired after a command is performed if it results in success.
+`command.finish` | Will be fired after a command is performed, regardless if the command resulted in success or error. This will be fired after the `.success` or `.error` event.
+
+Each event can have one or multiple handlers, for example lets assume we want
+to temporarily copy some dependency inside the project directory, just during
+the build process so it will be available for Docker:
+
+```yaml
+events:
+  build.start:
+    !cmd cp -rf {project.sdk} {project.local}/lib/sdk
+  build.finish:
+    - !cmd ls -l {project.local}/lib/sdk
+    - !cmd rm -rf {project.local}/lib/sdk
+```
 
 ##### Repo configuration
 This configuration is mandatory for the [git commands](#git-commands). It is a
