@@ -45,7 +45,8 @@ class Project {
 
 	Sync () {
 		if ( this._repo === null ) {
-			throw new Error( 'Can not sync a project (' + this._name + ') without git "repo" configuration.' );
+			console.log( 'Can not sync a project (' + this._name + ') without git "repo" configuration. Skipping.' );
+			return true;
 		}
 
 		var argv = this._app.getArgv();
@@ -113,7 +114,8 @@ class Project {
 		}
 
 		if ( this._image === null ) {
-			throw new Error( 'Can not remove images for a project (' + this._name + ') without "image" configuration.' );
+			console.log( 'Can not remove images for a project (' + this._name + ') without "image" configuration. Skipping.' );
+			return true;
 		}
 
 		var vars = this._vars;
@@ -137,7 +139,8 @@ class Project {
 
 	Build () {
 		if ( this._image === null ) {
-			throw new Error( 'Can not build a project (' + this._name + ') without "image" configuration.' );
+			console.log( 'Can not build a project (' + this._name + ') without "image" configuration. Skipping.' );
+			return true;
 		}
 
 		var argv = this._app.getArgv();
@@ -162,7 +165,8 @@ class Project {
 
 	Push () {
 		if ( this._image === null ) {
-			throw new Error( 'Can not push a project (' + this._name + ') without "image" configuration.' );
+			console.log( 'Can not push a project (' + this._name + ') without "image" configuration. Skipping.' );
+			return true;
 		}
 
 		var argv = this._app.getArgv();
@@ -188,7 +192,8 @@ class Project {
 
 	Run () {
 		if ( this._pod === null ) {
-			throw new Error( 'Can not run a project (' + this._name + ') without "pod" configuration.' );
+			console.log( 'Can not run a project (' + this._name + ') without "pod" configuration. Skipping.' );
+			return true;
 		}
 		this.notify( 'run.start' );
 		this._pod.enter();
@@ -201,7 +206,8 @@ class Project {
 
 	Stop () {
 		if ( this._pod === null ) {
-			throw new Error( 'Can not stop a project (' + this._name + ') without "pod" configuration.' );
+			console.log( 'Can not stop a project (' + this._name + ') without "pod" configuration. Skipping.' );
+			return true;
 		}
 		this.notify( 'stop.start' );
 		this._pod.enter();
