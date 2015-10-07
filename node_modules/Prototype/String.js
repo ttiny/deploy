@@ -268,3 +268,8 @@ Object.defineProperty( String.prototype, 'toFirstUpperCase', {
 	writable: true
 } );
 
+Object.defineProperty( String.prototype, 'contains', {
+	value: String.prototype.includes,
+	writable: false
+} );
+

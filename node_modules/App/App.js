@@ -7,10 +7,7 @@ class App {
 
 		this._argv = Argv.parse();
 		
-		var _this = this;
-		var close = function () {
-			return _this.close.apply( _this, arguments );
-		};
+		var close = this.close.bind( this );
 
 		process.on( 'SIGINT', close );
 		process.on( 'SIGHUP', close );

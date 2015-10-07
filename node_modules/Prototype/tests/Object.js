@@ -59,11 +59,19 @@ Unitest( 'Object.newArgs()', function ( test ) {
 	};
 
 	var B = function () {
-		return arguments[1];
+		return arguments[ 1 ];
 	};
 
+	class C {
+		constructor () {
+			this.a = arguments[ 1 ];
+		}
+	}
+
 	test( Object.newArgs( A, [ 1, 2 ] ) instanceof A );
-	test( Object.newArgs( B, [ 1, 2 ] ) === 2 );
+	test( Object.newArgs( B, [ 1, 2 ] ) instanceof B );
+	test( Object.newArgs( C, [ 1, 2 ] ) instanceof C );
+	test( Object.newArgs( C, [ 1, 2 ] ).a === 2 );
 
 } );
 

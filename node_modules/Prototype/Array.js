@@ -93,3 +93,10 @@ Object.defineProperty( Array.prototype, 'map', { value: function ( callback, thi
 	},
 	writable: false
 } );
+
+
+Object.defineProperty( Array.prototype, 'contains', { value: function ( value ) {
+		return this.indexOf( value ) >= 0;
+	},
+	writable: false
+} );

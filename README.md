@@ -49,6 +49,7 @@ GitLab on the way.
 - [REST usage](#rest-usage)
   - [REST syntax](#rest-syntax)
   - [Webhooks](#webhooks)
+  - [Colors in the HTTP output](#colors-in-the-http-output)
 - [Configuration](#configuration)
   - [HTTP configuration](#http-configuration)
   - [Git authentication](#git-authentication)
@@ -373,6 +374,11 @@ payload. For example:
 http://myserver.com/sync/myproject/master?secret=itsme
 ```
 
+### Colors in the HTTP output
+
+- If you want HTML output send header `Accept: text/html`.
+- If you want plain text output with ANSI colors send header `Accept: text/tty`.
+- Otherwise you will get plain text without colors.
 
 
 Configuration

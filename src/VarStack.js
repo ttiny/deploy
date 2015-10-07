@@ -10,17 +10,17 @@ class VarStack {
 
 	print () {
 		var vars = this._vars;
-		console.log( 'Vars:', '\n-----' )
+		console.info( 'Vars:', '\n-----' )
 		for ( var i = this._levels.last || 0, iend = vars.length; i < iend; ++i ) {
 			var v = vars[ i ];
 			if ( v.value instanceof Object ) {
-				console.log( v.name, '= >', '\n', v.value, '\n', this.render( yaml( v.value, this ) ), '\n^^^' );
+				console.info( v.name, '= >', '\n', v.value, '\n', this.render( yaml( v.value, this ) ), '\n^^^' );
 			}
 			else {
-				console.log( v.name, '=', this.render( yaml( v.value, this ) ) );
+				console.info( v.name, '=', this.render( yaml( v.value, this ) ) );
 			}
 		}
-		console.log( '^^^^^' );
+		console.info( '^^^^^\n' );
 	}
 
 	push ( name ) {

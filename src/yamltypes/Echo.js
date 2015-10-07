@@ -13,7 +13,7 @@ class Echo extends DeferredYaml {
 	
 	resolve ( vars ) {
 		var ret = vars.render( this._echo );
-		console.log( ret );
+		console.cliOutput( ret );
 		return ret;
 	}
 }

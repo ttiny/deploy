@@ -1,7 +1,7 @@
 {
 	"name": "deploy",
 	"description": "Git and Docker deployment tool",
-	"version": "0.5.0",
+	"version": "0.2.0",
 	"author": "Borislav Peev <borislav.asdf@gmail.com>",
 	"engine": [
 		"node >= 4.0.0"

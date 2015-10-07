@@ -19,7 +19,7 @@ class Docker {
 		var options = { stdio: 'inherit' };
 		if ( isLocal ) {
 			options.cwd = this._path;
-			console.log( 'Local build directory is', this._path );
+			console.info( 'Local build directory is', this._path );
 		}
 		var args = [ 'build', '--force-rm=true', '-t', this._image ];
 		if ( this._file ) {
@@ -37,14 +37,14 @@ class Docker {
 		else {
 			args.push( this._path );
 		}
-		var ret = Docker.spawn( 'docker', args, options );
+		var ret = Docker._spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
 
 	Push () {
 		var options = { stdio: 'inherit' };
 		var args = [ 'push', this._image ];
-		var ret = Docker.spawn( 'docker', args, options );
+		var ret = Docker._spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
 
@@ -56,7 +56,7 @@ class Docker {
 			args.push( '-f' )
 		}
 		args.push( this._image );
-		var ret = Docker.spawn( 'docker', args, options );
+		var ret = Docker._spawn( 'docker', args, options );
 		return ret.status === 0;
 	}
 
@@ -74,8 +74,9 @@ class Docker {
 	exit () {
 	}
 
-	static spawn ( cmd, args, options ) {
-		console.log( cmd, args.join( ' ' ) );
+	static _spawn ( cmd, args, options ) {
+		// docker has animated output
+		console.cli( cmd, args.join( ' ' ) );
 		return ChildProcess.spawnSync( cmd, args, options );
 	}
 

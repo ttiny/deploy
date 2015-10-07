@@ -1,7 +1,6 @@
 "use strict";
 
 var Shelljs = require( 'shelljs' );
-var ChildProcess = require( 'child_process' );
 var Fs = require( 'fs' );
 var Github = require( './host/Github' );
 
@@ -18,7 +17,7 @@ class Git {
 	}
 
 	sync () {
-		console.log( 'Local repo directory is', this._local );
+		console.info( 'Local repo directory is', this._local );
 		if ( this._localIsGit() ) {
 			return this.pull();
 		}
@@ -35,25 +34,25 @@ class Git {
 				Fs.rmdirSync( this._local )
 			}
 			catch ( e ) {
-				console.log( 'Local directory is not empty for clone. Trying init.' );
+				console.info( 'Local directory is not empty for clone. Trying init.' );
 				isEmpty = false;
 				// this will happen for non-empty dir, in which case git clone will also fail
 			}
 		}
 		Shelljs.mkdir( '-p', this._local );
 
-		var options = { stdio: 'inherit', cwd: this._local };
+		var options = { /*stdio: 'inherit',*/ cwd: this._local };
 		if ( !isEmpty ) {
 			var args = [ 'init' ];
-			var ret = Git._spawn( 'git', args, options );
+			var ret = console.spawn( 'git', args, options );
 			if ( ret.status === 0 ) {
 
 				var args = [ 'remote', 'add', 'origin', this._remote ];
-				var ret = Git._spawn( 'git', args, options );
+				var ret = console.spawn( 'git', args, options );
 
 				if ( ret.status === 0 ) {
 					var args = [ 'fetch'/*, '--depth=1'*/ ];
-					var ret = Git._spawn( 'git', args, options );
+					var ret = console.spawn( 'git', args, options );
 
 					if ( ret.status === 0 ) {
 						var ret = this._cmdWithUntrackedFiles( [ 'checkout', ( this._isTag ? 'tags/' : 'origin/' ) + this._branch ] );
@@ -65,15 +64,14 @@ class Git {
 			}
 		}
 
-		var options = { stdio: undefined, cwd: this._local };
+		var options = { /*stdio: undefined,*/ cwd: this._local };
 		var args = [ 'clone', /*'--depth', '1',*/ '--recursive', '--branch', this._branch, this._remote, this._local ];
-		var ret = Git._spawn( 'git', args, options );
+		var ret = console.spawn( 'git', args, options );
 
 		var out = '';
 		if ( ret.output ) {
 			//todo: this all goes to stdout even if it is error, which is incosistent with other output which will go to stderr
 			out = ret.output.join( '\n' );
-			console.log( out );
 		}
 
 		if ( out.indexOf( 'Permission denied (publickey).' ) > 0 ) {
@@ -86,15 +84,14 @@ class Git {
 	pull () {
 
 		// check if the local matches remote or we have different project
-		var options = { stdio: undefined, cwd: this._local };
+		var options = { /*stdio: undefined,*/ cwd: this._local };
 		var args = [ 'remote', '-v' ];
-		var ret = Git._spawn( 'git', args, options );
+		var ret = console.spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
 
 		var out = ret.output.join( '\n' );
-		console.log( out );
 
 		var match = out.match( /origin\s+(\S+)\s+\(fetch\)/ );
 		if ( match === null ) {
@@ -112,7 +109,7 @@ class Git {
 		}
 
 		if ( match[ 1 ] !== this._remote ) {
-			console.error( 'Repo origin mismatch: expected', this._remote, 'but found', match[ 1 ], 'in', this._local, '.' );
+			console.error( 'Repo origin mismatch: expected', this._remote, 'but found', match[ 1 ], 'in', this._local + '.' );
 			return false;
 		}
 
@@ -122,17 +119,17 @@ class Git {
 			return false;
 		}
 
-		var options = { stdio: 'inherit', cwd: this._local };
+		var options = { /*stdio: 'inherit',*/ cwd: this._local };
 		var args, ret;
 
 		if ( this._isTag ) {
 			// for some reason pulling a tag fails without this
 			args = [ 'config', '--global', 'user.email', 'user@email.com' ];
-			Git._spawn( 'git', args, options );
+			console.spawn( 'git', args, options );
 
 			// fetch tags since if new tag is added on the remote for the history we have and we don't have the tag, it won't work
 			args = [ 'fetch', '--tags' ];
-			Git._spawn( 'git', args, options );
+			console.spawn( 'git', args, options );
 		}
 
 		ret = this._cmdWithUntrackedFiles( [ 'pull', '-s', 'recursive', '-X', 'theirs', /*'--depth=1',*/ 'origin', this._branch ] );
@@ -153,22 +150,22 @@ class Git {
 			}
 		}
 
-		options = { stdio: 'inherit', cwd: this._local };
+		options = { /*stdio: 'inherit',*/ cwd: this._local };
 		args = [ 'submodule', 'update', '--init', '--recursive' ];
-		ret = Git._spawn( 'git', args, options );
+		ret = console.spawn( 'git', args, options );
 		return ret.status === 0;
 	}
 
 	_reset () {
-		var options = { stdio: 'inherit', cwd: this._local };
+		var options = { /*stdio: 'inherit',*/ cwd: this._local };
 		var args = [ 'reset', '--hard' ];
-		var ret = Git._spawn( 'git', args, options );
+		var ret = console.spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
 
 		args = [ 'submodule', 'foreach', '--recursive', 'git', 'reset', '--hard' ]
-		ret = Git._spawn( 'git', args, options );
+		ret = console.spawn( 'git', args, options );
 		if ( ret.status !== 0 ) {
 			return false;
 		}
@@ -177,26 +174,25 @@ class Git {
 	}
 
 	_checkAuthentication () {
-		console.log( 'Check your authentication:' );
-		var options = { stdio: 'inherit', cwd: this._local };
+		console.info( 'Check your authentication:' );
+		var options = { /*stdio: 'inherit',*/ cwd: this._local };
 		var args = [ '-T', this._remote.splitFirst( ':' ).left ];
-		var ret = Git._spawn( 'ssh', args, options );
+		var ret = console.spawn( 'ssh', args, options );
 		return ret.status === 0;	
 	}
 
 	_cmdWithUntrackedFiles ( args ) {
 		// retry pulling until we delete all untracked files, if any
-		var options = { stdio: undefined, cwd: this._local };
+		var options = { /*stdio: undefined,*/ cwd: this._local };
 		var lastMatch1 = null;
 		while ( true ) {
 
-			var ret = Git._spawn( 'git', args, options );
+			var ret = console.spawn( 'git', args, options );
 			
 			var out = '';
 			if ( ret.output ) {
 				//todo: this all goes to stdout even if it is error, which is incosistent with other output which will go to stderr
 				out = ret.output.join( '\n' );
-				console.log( out );
 			}
 			
 			if ( ret.status === 0 ) {
@@ -235,10 +231,10 @@ class Git {
 					return local + fn;
 				} );
 
-			console.log( 'Removing ' + files.join( ', ' ) + '.' );
+			console.info( 'Removing ' + files.join( ', ' ) + '.' );
 			Shelljs.rm( '-rf', files );
 
-			console.log( 'Retrying the sync.' )
+			console.info( 'Retrying the sync.' )
 		}
 
 		return true;
@@ -250,19 +246,14 @@ class Git {
 	}
 
 	clean () {
-		console.log( 'Removing ' + this._local, '...' );
+		console.info( 'Removing', this._local + '...' );
 		Shelljs.rm( '-rf', this._local );
 		if ( Fs.existsSync( this._local ) ) {
-			console.error( 'Failed to clean the local directory.' );
+			console.warn( 'Failed to clean the local directory.' );
 			return false;
 		}
 
 		return true;
-	}
-
-	static _spawn ( cmd, args, options ) {
-		console.log( cmd, args.join( ' ' ) );
-		return ChildProcess.spawnSync( cmd, args, options );
 	}
 
 	static getFullRemote ( remote ) {

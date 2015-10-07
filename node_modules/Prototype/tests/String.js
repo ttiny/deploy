@@ -136,3 +136,11 @@ Unitest( 'String.toFirstUpperCase()', function ( test ) {
 	test( ' asd'.toFirstUpperCase() == ' asd' );
 	
 } );
+
+
+Unitest( 'String.contains()', function ( test ) {
+
+	test( 'asd'.contains( 'sd' ) );
+	test( !'asd'.contains( 'qwe' ) );
+	
+} );

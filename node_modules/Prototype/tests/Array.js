@@ -50,3 +50,16 @@ Unitest( 'Array.map()', function ( test ) {
 	
 
 } );
+
+
+Unitest( 'Array.contains()', function ( test ) {
+
+	var c = {};
+	var b = [ 1, "asd", {}, c ];
+	test( b.contains( c ) );
+	test( b.contains( "asd" ) );
+	test( b.contains( 1 ) );
+	test( !b.contains( {} ) );
+	
+
+} );

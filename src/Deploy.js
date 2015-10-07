@@ -11,6 +11,7 @@ var Path = require( 'path' );
 var Argv = require( 'App/Argv' )
 
 require( './YamlHelpers' );
+require( './LogHelpers' );
 
 class Deploy extends HttpApp {
 	
@@ -38,7 +39,7 @@ class Deploy extends HttpApp {
 			}
 		}
 
-		super( DeployRequest, yaml.http.host, yaml.http.port );
+		super( DeployRequest );
 		this._yaml = yaml;
 		
 		if ( argv === null || argv[ 0 ] === undefined ) {
@@ -50,17 +51,21 @@ class Deploy extends HttpApp {
 
 	}
 
-	doServer ( yaml ) {
-		console.log( 'Listening on', yaml.http.host + ':' + yaml.http.port, '...' );
-		var khs = yaml[ 'known-hosts' ];
+	doServer ( yml ) {
+		var khs = yaml( yml[ 'known-hosts' ], this._vars );
 		this.KnownHosts = {};
-		this.SecretAccess = yaml[ 'secret-access' ];
+		this.SecretAccess = yaml( yml[ 'secret-access' ], this._vars );
 		if ( khs instanceof Object ) {
-			for ( var host in khs ) {
+			for ( let host in khs ) {
 				this.KnownHosts[ host ] = new Netmask( khs[ host ] );
 			}
 		}
-		this.startListening();
+		
+		var http = yaml( yml.http, this._vars );
+		var host = yaml( http.host, this._vars );
+		var port = yaml( http.port, this._vars );
+		console.log( 'Listening on', host + ':' + port + '...' );
+		this.startListening( port, host );
 	}
 	
 	doCli () {
@@ -134,10 +139,10 @@ class Deploy extends HttpApp {
 			project.exit();
 			return;
 		}
-		console.log( action + 'ing project', project.getName(), 'branch', branch, '...' );
-		console.log( '==========' );
+		console.infoGroup( action + 'ing project', project.getName(), 'branch', branch, '...' );
+		console.infoGroup( '==========' );
 		if ( project[ action ]( this.getArgv() ) ) {
-			console.log( 'All good.' )
+			console.infoGroup( 'All good.' )
 		}
 		else {
 			process.exitCode = 1;
@@ -167,7 +172,7 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					this.getHostApi( repo ).getBranches( repo.splitFirst( '/' ).right, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for', repo + ', skipping.' );
+							console.warn( 'Couldn\'t retrieve the list of branches for', repo + ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -195,7 +200,7 @@ class Deploy extends HttpApp {
 		function handleProjects ( err, projects, name ) {
 
 			if ( projects.length === 0 ) {
-				console.error( 'Couldn\'t find any projects matching', name + ', skipping.' );
+				console.warn( 'Couldn\'t find any projects matching', name + ', skipping.' );
 				return;
 			}
 
@@ -207,7 +212,7 @@ class Deploy extends HttpApp {
 				if ( branch == '*' ) {
 					_this.getProjectBranches( project, function ( err, branches ) {
 						if ( err ) {
-							console.error( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
+							console.warn( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
@@ -221,7 +226,7 @@ class Deploy extends HttpApp {
 						_this.doSingleAction( action, project, branch );
 					}
 					else {
-						console.error( 'Couldn\'t auto decide appropriate branch for project', project.getName() + ', skipping.' );
+						console.warn( 'Couldn\'t auto decide appropriate branch for project', project.getName() + ', skipping.' );
 					}
 				}
 				else {
@@ -316,7 +321,7 @@ class Deploy extends HttpApp {
 		var ret = this._credentials[ name ];
 
 		if ( ret === undefined ) {
-			console.log( 'No credentials found for', repo, '. Assuming public repo.' )
+			console.warn( 'No credentials found for', repo, '. Assuming public repo.' )
 			var HostApi = require( './host/' + host.toFirstUpperCase() )
 			return new HostApi();
 		}
@@ -373,7 +378,7 @@ class Deploy extends HttpApp {
 				if ( hostApi ) {
 					hostApi.getBranches( remote.splitFirst( '/' ).right.splitFirst( '#' ).left, function ( err, branches ) {
 						if ( err && local.length > 0 ) {
-							console.log( 'Couldn\'t retrieve the list branches for project', project.getName() + ', using only locally known ones.' );
+							console.warn( 'Couldn\'t retrieve the list branches for project', project.getName() + ', using only locally known ones.' );
 							callback( null, local );
 							return;
 						}
@@ -405,7 +410,7 @@ class Deploy extends HttpApp {
 				let project = projects[ name ];
 				this.getProjectBranches( project, function ( err, branches ) {
 					if ( err ) {
-						console.error( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
+						console.warn( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
 					}
 					else {
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {

@@ -21,7 +21,7 @@ class Rocker {
 		var isRocker = this._data.rocker === true;
 		if ( isLocal ) {
 			options.cwd = this._path;
-			console.log( 'Local build directory is', this._path );
+			console.info( 'Local build directory is', this._path );
 		}
 		var args = [ 'build' ];
 		if ( this._file ) {
@@ -55,9 +55,9 @@ class Rocker {
 		if ( isRocker && argv[ 'debug-image' ] ) {
 			args.push( '--print' );
 			args.push( isLocal ? '.' : this._path );
-			console.log( '\nRockerfile:\n--------' );
+			console.info( '\nRockerfile:\n--------' );
 			Rocker._spawn( 'rocker', args, options );
-			console.log( '\n^^^^^\n' );
+			console.info( '\n^^^^^\n' );
 			args.pop();
 			args.pop();
 		}
@@ -113,7 +113,7 @@ class Rocker {
 	}
 
 	static _spawn ( cmd, args, options ) {
-		console.log( cmd, args.join( ' ' ) );
+		console.cli( cmd, args.join( ' ' ) );
 		return ChildProcess.spawnSync( cmd, args, options );
 	}
 

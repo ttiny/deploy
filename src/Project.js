@@ -39,13 +39,13 @@ class Project {
 		var vars = this._vars;
 
 		for ( var i = 0, iend = events.length; i < iend; ++i ) {
-			console.log( vars.render( yaml( events[ i ], vars ) ) );
+			console.cliOutput( vars.render( yaml( events[ i ], vars ) ) );
 		}
 	}
 
 	Sync () {
 		if ( this._repo === null ) {
-			console.log( 'Can not sync a project (' + this._name + ') without git "repo" configuration. Skipping.' );
+			console.warn( 'Can not sync a project (' + this._name + ') without git "repo" configuration. Skipping.' );
 			return true;
 		}
 
@@ -74,7 +74,7 @@ class Project {
 		var argv = this._app.getArgv();
 
 		if ( argv.force !== true && this.isCleanProtected() ) {
-			console.log( 'Skipping protected project', this._name, '.' );
+			console.warn( 'Skipping protected project', this._name + '.' );
 			return true;
 		}
 
@@ -109,12 +109,12 @@ class Project {
 		var argv = this._app.getArgv();
 
 		if ( argv.force !== true && this.isRmiProtected() ) {
-			console.log( 'Skipping protected project', this._name, '.' );
+			console.warn( 'Skipping protected project', this._name + '.' );
 			return true;
 		}
 
 		if ( this._image === null ) {
-			console.log( 'Can not remove images for a project (' + this._name + ') without "image" configuration. Skipping.' );
+			console.warn( 'Can not remove images for a project (' + this._name + ') without "image" configuration. Skipping.' );
 			return true;
 		}
 
@@ -139,7 +139,7 @@ class Project {
 
 	Build () {
 		if ( this._image === null ) {
-			console.log( 'Can not build a project (' + this._name + ') without "image" configuration. Skipping.' );
+			console.warn( 'Can not build a project (' + this._name + ') without "image" configuration. Skipping.' );
 			return true;
 		}
 
@@ -165,7 +165,7 @@ class Project {
 
 	Push () {
 		if ( this._image === null ) {
-			console.log( 'Can not push a project (' + this._name + ') without "image" configuration. Skipping.' );
+			console.warn( 'Can not push a project (' + this._name + ') without "image" configuration. Skipping.' );
 			return true;
 		}
 
@@ -192,7 +192,7 @@ class Project {
 
 	Run () {
 		if ( this._pod === null ) {
-			console.log( 'Can not run a project (' + this._name + ') without "pod" configuration. Skipping.' );
+			console.warn( 'Can not run a project (' + this._name + ') without "pod" configuration. Skipping.' );
 			return true;
 		}
 		this.notify( 'run.start' );
@@ -206,7 +206,7 @@ class Project {
 
 	Stop () {
 		if ( this._pod === null ) {
-			console.log( 'Can not stop a project (' + this._name + ') without "pod" configuration. Skipping.' );
+			console.warn( 'Can not stop a project (' + this._name + ') without "pod" configuration. Skipping.' );
 			return true;
 		}
 		this.notify( 'stop.start' );

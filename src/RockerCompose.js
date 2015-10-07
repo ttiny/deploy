@@ -34,11 +34,10 @@ class RockerCompose {
 		var argv = this._project.getApp().getArgv();
 
 		if ( !Fs.existsSync( this._file ) ) {
-			console.error( 'Pod definition file', this._file, 'is not found.' );
+			console.error( 'Pod definition file', this._file + 'is not found.' );
 			return false;
 		}
 
-		// console.log( 'Using pod definition ' + this._file + '.' );
 		var args = [ cmd, '-f', this._file ];
 		for ( var name in this._vars ) {
 			args.push( '-var', name + '=' + this._vars[ name ] );
@@ -56,10 +55,14 @@ class RockerCompose {
 		if ( cmd == 'run' ) {
 			var options = { stdio: undefined, cwd: this._path };
 			args.push( '-print' )
-			var ret = RockerCompose._spawn( 'rocker-compose', args, options, !argv[ 'debug-pod' ] );
+			var ret = RockerCompose._spawn( 'rocker-compose', args, options, true );
 			if ( ret.status !== 0 ) {
-				console.log( 'rocker-compose', args.join( ' ' ) );
-				console.error( ret.output.join( '\n' ) );
+				console.cli( 'rocker-compose', args.join( ' ' ) );
+				var str = ret.output.join( '\n' );
+				if ( !str.endsWith( '\n\n' ) ) {
+					str += '\n';
+				}
+				console.error( str );
 				return false;	
 			}
 			this._createVolumes( ret.stdout.toString( 'utf8' ) );
@@ -83,7 +86,7 @@ class RockerCompose {
 				for ( var i = volumes.length - 1; i >= 0; --i ) {
 					var hostDir = volumes[ i ].splitFirst( ':' ).left;
 					if ( !Fs.existsSync( hostDir ) ) {
-						console.log( 'Creating volume directory', hostDir, '.' );
+						console.info( 'Creating volume directory', hostDir + '.' );
 						Shelljs.mkdir( '-p', hostDir );
 					}
 				}
@@ -119,7 +122,7 @@ class RockerCompose {
 
 	static _spawn ( cmd, args, options, silent ) {
 		if ( !silent ) {
-			console.log( cmd, args.join( ' ' ) );
+			console.cli( cmd, args.join( ' ' ) );
 		}
 		return ChildProcess.spawnSync( cmd, args, options );
 	}

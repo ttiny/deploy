@@ -148,17 +148,13 @@ Object.defineProperty( Object, 'isObject', {
 
 /**
  * Applies arguments to a constructor.
- * Credits http://stackoverflow.com/a/16527324/325443.
+ * Credits http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible.
  * @def static mixed function Object.newArgs ( obj:Object, args:array )
  * @author Borislav Peev <borislav.asdf@gmail.com>
  */
 Object.defineProperty( Object, 'newArgs', { 
 	value: function ( ctor, args ) {
-		var new_obj = Object.create( ctor.prototype );
-		var ctor_ret = ctor.apply( new_obj, args );
-
-		// Some constructors return a value; make sure to use it!
-		return ctor_ret !== undefined ? ctor_ret: new_obj;
+		return new ( Function.prototype.bind.apply( ctor, [ null ].concat( args ) ) );
 	},
 	writable: true
 } );
