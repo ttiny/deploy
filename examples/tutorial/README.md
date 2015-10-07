@@ -120,8 +120,8 @@ Lets show the config step by step:
       branches: master
 
       vars:
-        local: /Users/bobi/Downloads/deploy-tutorial
-        image: bobi/whalesay
+        project.local: /Users/bobi/Downloads/deploy-tutorial
+        project.image: bobi/whalesay
   ```
 
 2. Add configuration of the repository. Notice how we spell the repo. We just
@@ -190,8 +190,8 @@ Lets show the config step by step:
       branches: master
 
       vars:
-        local: /Users/bobi/Downloads/deploy-tutorial
-        image: bobi/whalesay
+        project.local: /Users/bobi/Downloads/deploy-tutorial
+        project.image: bobi/whalesay
 
       repo:
         github/bobef/deploy-tutorial: ${project.local}

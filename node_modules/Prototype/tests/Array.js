@@ -63,3 +63,13 @@ Unitest( 'Array.contains()', function ( test ) {
 	
 
 } );
+
+
+Unitest( 'Array.unique()', function ( test ) {
+
+	var c = {};
+	var d = {};
+	test.eq( [ 1, 2, 3, 1, 4 ].unique(), [ 1, 2, 3, 4 ] );
+	test.eq( [ 1, "asd", d, c, c ].unique(), [ 1, "asd", d, c ] );
+
+} );

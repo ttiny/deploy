@@ -73,6 +73,7 @@ class Deploy extends HttpApp {
 		this._projects = null;
 		this._templates = null;
 		this._credentials = null;
+		this._branchesCache = {};
 		
 		this.loadConfig();
 
@@ -130,15 +131,28 @@ class Deploy extends HttpApp {
 
 	isValidAction ( name ) {
 		name = name.toLowerCase().toFirstUpperCase();
-		return Project.prototype[ name ] instanceof Function;
+		return name == 'List' || Project.prototype[ name ] instanceof Function;
 	}
 
-	doSingleAction ( action, project, branch ) {
+	doSingleAction ( action, project, branch, list ) {
+
+
 		project.enter( branch );
 		if ( !project.isBranchAllowed( branch ) ) {
 			project.exit();
 			return;
 		}
+		
+		if ( action == 'List' ) {
+			var name = project.getName();
+			if ( list[ name ] === undefined ) {
+				list[ name ] = [];
+			}
+			list[ name ].push( branch );
+			project.exit();
+			return;
+		}
+
 		console.infoGroup( action + 'ing project', project.getName(), 'branch', branch, '...' );
 		console.infoGroup( '==========' );
 		if ( project[ action ]( this.getArgv() ) ) {
@@ -152,14 +166,14 @@ class Deploy extends HttpApp {
 		project.exit();
 	}
 
-	doAction ( action, project, branch ) {
+	doAction ( action, project, branch, callback ) {
+
+		callback = callback || function () {};
 		
 		var _this = this;
 
 		if ( project == '*' ) {
-			for ( var name in this._projects ) {
-				this.doAction( action, name, branch );
-			}
+			handleProjects( null, this._projects, branch, '*' );
 			return;
 		}
 
@@ -175,9 +189,19 @@ class Deploy extends HttpApp {
 							console.warn( 'Couldn\'t retrieve the list of branches for', repo + ', skipping.' );
 							return;
 						}
-						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-							_this.doAction( action, project, branches[ i ] );
+
+						function doOne ( i ) {
+							if ( i >= branches.length ) {
+								return;
+							}
+
+							_this.doAction( action, project, branches[ i ], () => {
+								doOne( i + 1  );
+							} );
 						}
+
+						doOne( 0 );
+
 					} );
 					return;
 				}
@@ -190,49 +214,91 @@ class Deploy extends HttpApp {
 			else {
 				branch = '*';
 			}
-
-			this.findProjectsByRepo( repo, branch, handleProjects.bindArgsAfter( project ) );
+			this.findProjectsByRepo( repo, branch, handleProjects.bindArgsAfter( repo ) );
 		}
 		else {
 			handleProjects( null, this.findProjectsByName( project ), project );
 		}
 
 		function handleProjects ( err, projects, name ) {
+			
+			var list = {};
+			action = action.toLowerCase().toFirstUpperCase();
 
 			if ( projects.length === 0 ) {
 				console.warn( 'Couldn\'t find any projects matching', name + ', skipping.' );
+				done();
 				return;
 			}
 
-			action = action.toLowerCase().toFirstUpperCase();
+			projects = projects.unique();
+
+			var projectsLeft = projects.length;
 
 			for ( var i = 0, iend = projects.length; i < iend; ++i ) {
 				let project = projects[ i ];
 
 				if ( branch == '*' ) {
+					// this is async, but doSingleAction is sync so they won't be executed in parallel
 					_this.getProjectBranches( project, function ( err, branches ) {
 						if ( err ) {
 							console.warn( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
+							callback();
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-							_this.doSingleAction( action, project, branches[ i ] );
+							_this.doSingleAction( action, project, branches[ i ], list );
+						}
+						if ( --projectsLeft == 0 ) {
+							done();
 						}
 					} );
 				}
 				else if ( branch == '**' ) {
 					let branch = _this.getOnlyBranch( project );
 					if ( branch !== null ) {
-						_this.doSingleAction( action, project, branch );
+						_this.doSingleAction( action, project, branch, list );
 					}
 					else {
 						console.warn( 'Couldn\'t auto decide appropriate branch for project', project.getName() + ', skipping.' );
 					}
+					if ( --projectsLeft == 0 ) {
+						done();
+					}
 				}
 				else {
-					_this.doSingleAction( action, project, branch );
+					_this.doSingleAction( action, project, branch, list );
+					if ( --projectsLeft == 0 ) {
+						done();
+					}
 				}
-			}	
+			}
+
+			function done () {
+
+				if ( action != 'List' ) {
+					callback();
+					return;
+				}
+
+				var empty = true;
+				for ( var name in list ) {
+					var branches = list[ name ].sort();
+					if ( empty ) {
+						empty = false;
+						console.infoGroup( 'Listing projects:' );
+					}
+					console.info( name + ':', branches.join( ', ' ) );
+				}
+				if ( empty ) {
+					console.infoGroup( 'No matches found to list.' );
+				}
+				else {
+					console.infoGroup( '^^^^^\n' );
+				}
+
+				callback();
+			}
 		}
 
 		
@@ -242,10 +308,22 @@ class Deploy extends HttpApp {
 		console.log( 'deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..' );
 	}
 
+	normalizeProject ( prj ) {
+		prj = yaml( prj, this._vars );
+		if ( Object.isObject( prj ) && Object.keys( prj ).length == 1 ) {
+			for ( var key in prj ) {
+				var ret = prj[ key ];
+				ret.name = key;
+				return ret;
+			}
+		}
+		return prj;
+	}
+
 	loadConfig () {
 		this._vars = new VarStack;
-		this._projects = {};
-		this._templates = {};
+		this._projects = [];
+		this._templates = [];
 		this._credentials = {};
 
 		// get top level vars
@@ -274,27 +352,34 @@ class Deploy extends HttpApp {
 
 		// build projects list
 		var projects = yaml( this._yaml.projects, this._vars);
-		if ( projects instanceof Object ) {
-
-			// load the templates
+		
+		if ( Object.isObject( projects ) ) {
+			var tmp = [];
 			for ( var name in projects ) {
 				var project = yaml( projects[ name ], this._vars );
-				if ( project.template ) {
-					this._templates[ name ] = project;
+				project.name = name;
+				tmp.push( project );
+			}
+			projects = tmp;
+		}
+
+		if ( projects instanceof Array ) {
+			var prjs = [];
+			// load the templates first cause the projects need them
+			for ( var project of projects ) {
+				project = this.normalizeProject( project );
+				var isTemplate = yaml( project.template, this._vars );
+				if ( isTemplate ) {
 					delete project.template;
-					delete projects[ name ];
+					this._templates.push( project );
 				}
 				else {
-					// if the value was different after yaml()
-					projects[ name ] = project;
+					prjs.push( project );
 				}
 			}
-
-			// load the projects
-			for ( var name in projects ) {
-				var project = projects[ name ];
-				project.name = name;
-				this._projects[ name ] = new Project( this, this._vars, project );
+			// then load the projects
+			for ( var project of prjs ) {
+				this._projects.push( new Project( this, this._vars, project ) );
 			}
 		}
 
@@ -345,6 +430,22 @@ class Deploy extends HttpApp {
 
 	//bp: this is not in the project because atm all .enter calls are outside Project/Repo/etc
 	getProjectBranches ( project, callback ) {
+
+		var _callback = callback;
+		var _this = this;
+		callback = function ( err, branches ) {
+			if ( !err ) {
+				_this._branchesCache[ project.getName() ] = branches;
+			}
+			_callback( err, branches );
+		};
+
+		var cache = this._branchesCache[ project.getName() ];
+		if ( cache !== undefined ) {
+			callback( null, cache );
+			return;
+		}
+
 		project.enter( '*' );
 
 		// check if we are limited to static branch names or we have *
@@ -394,20 +495,21 @@ class Deploy extends HttpApp {
 	}
 
 	findProjectsByName ( name ) {
-		var project = this._projects[ name ];
-		if ( project ) {
-			return [ project ];
+		var ret = [];
+		for ( var project of this._projects ) {
+			if ( project.getName() == name ) {
+				ret.push( project );
+			}
 		}
-		return [];
+		return ret;
 	}
 
 	findProjectsByRepo ( repo, branch, callback ) {
 		var projects = this._projects;
-		var ret = {};
+		var ret = [];
 		var projectsLeft = Object.keys( projects ).length;
 		if ( branch == '*' ) {
-			for ( var name in projects ) {
-				let project = projects[ name ];
+			for ( let project of projects ) {
 				this.getProjectBranches( project, function ( err, branches ) {
 					if ( err ) {
 						console.warn( 'Couldn\'t retrieve the list of branches for project', project.getName() + ', skipping.' );
@@ -416,7 +518,7 @@ class Deploy extends HttpApp {
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
 							project.enter( branches[ i ] );
 							if ( project.isUsingRepo( repo ) ) {
-								ret[ project.getName() ] = project;
+								ret.push( project );
 							}
 							project.exit();
 						}
@@ -429,11 +531,10 @@ class Deploy extends HttpApp {
 			return;
 		}
 		else {
-			for ( var name in projects ) {
-				var project = projects[ name ];
+			for ( var project of projects ) {
 				project.enter( branch );
 				if ( project.isUsingRepo( repo ) ) {
-					ret[ project.getName() ] = project;
+					ret.push( project );
 				}
 				project.exit();
 			}
@@ -447,7 +548,11 @@ class Deploy extends HttpApp {
 	}
 
 	getTemplate ( name ) {
-		return this._templates[ name ];
+		for ( var template of this._templates ) {
+			if ( template.name == name ) {
+				return template;
+			}
+		}
 	}
 
 }

@@ -1,3 +1,6 @@
+### 1.7.0
+- Added `Array.unique()`.
+
 ### 1.6.0
 - Added `String.contains()`.
 - Added `Array.contains()`.

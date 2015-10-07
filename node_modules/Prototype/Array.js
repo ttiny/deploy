@@ -100,3 +100,16 @@ Object.defineProperty( Array.prototype, 'contains', { value: function ( value ) 
 	},
 	writable: false
 } );
+
+
+Object.defineProperty( Array.prototype, 'unique', { value: function ( value ) {
+		var unique = [];
+		for ( var item of this ) {
+			if ( unique.indexOf( item ) < 0 ) {
+				unique.push( item );
+			}
+		}
+		return unique;
+	},
+	writable: false
+} );

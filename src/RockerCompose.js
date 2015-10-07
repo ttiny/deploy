@@ -34,7 +34,7 @@ class RockerCompose {
 		var argv = this._project.getApp().getArgv();
 
 		if ( !Fs.existsSync( this._file ) ) {
-			console.error( 'Pod definition file', this._file + 'is not found.' );
+			console.error( 'Pod definition file', this._file, 'is not found.' );
 			return false;
 		}
 

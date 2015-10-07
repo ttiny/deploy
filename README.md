@@ -36,6 +36,8 @@ GitLab on the way.
   - [Branch syntax](#branch-syntax)
   - [Options](#options)
   - [Examples](#examples)
+  - [Misc commands](#misc-commands)
+    - [List](#list)
   - [Git commands](#git-commands)
     - [Sync](#sync)
     - [Clean](#clean)
@@ -163,6 +165,7 @@ deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..
 #### Commands
 
 Command is one or more of bellow:
+- [Misc commands](#misc-commands)
 - [Git commands](#git-commands)
 - [Image commands](#image-commands)
 - [Pod commands](#pod-commands)
@@ -210,11 +213,24 @@ deploy sync myproject#master
 ```
 
 ```sh
-deploy clean,sync myproject#"*"
+deploy clean,sync "myproject#*"
 ```
 
 ```sh
 deploy sync repo:github/Perennials/deploy#master
+```
+
+```sh
+deploy list "*#*"
+```
+
+### Misc commands
+
+#### List
+Lists all matching projects and branches. Useful to test wildcards.
+
+```sh
+deploy list <project[#branch]>
 ```
 
 ### Git commands
@@ -401,7 +417,7 @@ Property | Description
 `!cmd command` | Will execute a shell command and use its output as a value.
 `!echo text` | Will echo the text to the console.
 `!yamlfile file` | Will parse a YAML file and incorporate its contents in the document.
-`!yamlfiles pattern` | Will parse all YAML files matching the pattern and incorporate their contents in the document. If all files contain mappings the return value will be a a merged mapping, otherwise an array of all the values.
+`!yamlfiles concat|merge pattern` | Will parse all YAML files matching the `pattern` and incorporate their contents in the document. If `merge` is given and all files contain mappings the return value will be a merged mapping, otherwise an array of all the values.
 `!textfile file` | Will read a file as a plain text and use it as a value.
 
 
@@ -518,12 +534,21 @@ vars:
 ```
 
 #### Projects
-Projects are described in the `project` root node. Projects can be reused as
+Projects are described in the `projects` root node. Projects can be reused as
 templates. All project sub-configuration is optional.
+
+Projects is either a mapping or an array of mappings. Additionally if the array
+items are mappings with one key it will be assumed to be a name of the project.
+
+It is possible to have different projects with the same, e.g. to have different
+configuration for different branches. To make use of this either use an array or
+put the name of the branch in the project (see bellow).
+
+Mapping:
 
 ```yaml
 projects:
-  name:
+  foo:
     extends: other_project
     template: true
     labels: just some labels
@@ -539,20 +564,61 @@ projects:
       # docker image configuration for the project
     pod:
       # pod configuration for the project
+  bar:
+    extends: ...
+    #...
+```
+
+Array of mappings. In this case the name should be given as property:
+
+```yaml
+projects:
+  - name: foo
+    extends: ...
+    #...
+  - name: bar
+    extends: ...
+    #...
+```
+
+Array of mappings with one key (used as a name):
+
+```yaml
+projects:
+  - foo:
+      extends: ...
+      branches: ...
+      #...
+  - bar:
+      extends: ...
+      branches: ...
+      #...
+```
+
+If the name of the project contains a branch name, the branch will be appended
+to the list of branches. This is to support different configurations for
+branches that may be too different.
+
+```yaml
+projects:
+  foo#1.0:
+    #...
+  foo#2.0:
+    #...
 ```
 
 Property | Value type | Description
 ---- | ---- | ----
-`projects.name` | string | `name` here is the actual name of the project.
-`projects.name.extends` | string | A template to use for the base of this project. The properties of this project will be merged recursively with the template.
-`projects.name.template` | `true` | Indicates the project is a template to be used for base of other projects and should be excluded of normal project treatment.
-`projects.name.labels` | string | A space separated list of labels. Currently only the labels `dont-clean` and `dont-rmi` has any use - to protect projects from being cleaned by mistake when cleaning with wildcard.
-`projects.name.branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
-`projects.name.vars` | mapping | A list of project specific variables. The same as in the root section but all names will be prefixed with `project.` and will only be available in the context of the project, not globally.
-`projects.name.events` | mapping | A list of project specific event handlers. These are some commands that will be executed upon some event ([see bellow](#events)).
-`projects.name.repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
-`projects.name.image` | mapping\|mapping[] | Docker image configuration for the project. [See bellow](#docker-configuration).
-`projects.name.pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
+`name` | string | The name of the project.
+`extends` | string | A template to use for the base of this project. The properties of this project will be merged recursively with the template.
+`template` | `true` | Indicates the project is a template to be used for base of other projects and should be excluded of normal project treatment.
+`labels` | string | A space separated list of labels. Currently only the labels `dont-clean` and `dont-rmi` has any use - to protect projects from being cleaned by mistake when cleaning with wildcard.
+`branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
+`vars` | mapping | A list of project specific variables. The same as in the root section but all names will only be available in the context of the project, not globally.
+`events` | mapping | A list of project specific event handlers. These are some commands that will be executed upon some event ([see bellow](#events)).
+`repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
+`image` | mapping\|mapping[] | Docker image configuration for the project. [See bellow](#docker-configuration).
+`pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
 
 ###### Variables
 

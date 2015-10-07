@@ -20,7 +20,21 @@ class Project {
 			data = tmpl.duplicate().mergeDeep( data );
 		}
 		this._data = data;
-		this._name = data.name;
+
+		var name = yaml( data.name, vars );
+		if ( String.isString( name ) ) {
+			name = name.splitFirst( '#' );
+		}
+		if ( Object.isObject( name ) && name.right ) {
+			if ( data.branches instanceof Array ) {
+				data.branches.push( name.right );
+			}
+			else if ( data.branches !== undefined ) {
+				data.branches = [ data.branches, name.right ];
+			}
+		}
+
+		this._name = Object.isObject( name ) ? name.left : null;
 		this._repo = null;
 		this._image = null;
 		this._pod = null;
@@ -231,7 +245,7 @@ class Project {
 		var locals = this._data.vars;
 		if ( locals instanceof Object ) {
 			for ( var name in locals ) {
-				vars.set( 'project.' + name, vars.render( locals[ name ] ) );
+				vars.set( name, vars.render( locals[ name ] ) );
 			}
 		}
 		if ( vars.get( 'project.debug' ) ) {

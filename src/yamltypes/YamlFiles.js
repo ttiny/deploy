@@ -9,6 +9,14 @@ class YamlFiles extends DeferredYaml {
 	
 	constructor ( data ) {
 		super();
+		if ( data.startsWith( 'concat ' ) ) {
+			this._merge = false;
+			data = data.slice( 7 );
+		}
+		else if ( data.startsWith( 'merge ' ) ) {
+			this._merge = true;
+			data = data.slice( 6 );
+		}
 		this._pattern = data;
 	}
 
@@ -22,7 +30,7 @@ class YamlFiles extends DeferredYaml {
 				allIsObj = false;
 			}
 		}
-		if ( allIsObj ) {
+		if ( this._merge && allIsObj ) {
 			var yaml = {};
 			for ( var i = 0, iend = files.length; i < iend; ++i ) {
 				yaml.mergeDeep( files[ i ] );
