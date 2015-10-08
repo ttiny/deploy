@@ -3,9 +3,14 @@
 
 class VarStack {
 	
-	constructor () {
+	constructor ( app ) {
+		this._app = app;
 		this._levels = [];
 		this._vars = [];
+	}
+
+	getApp () {
+		return this._app;
 	}
 
 	print () {

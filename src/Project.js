@@ -3,6 +3,8 @@
 var RockerCompose = require( './RockerCompose' );
 var Rocker = require( './Rocker' );
 var Repo = require( './Repo' );
+var Deps = require( './Deps' );
+var Dry = require( './Dry' );
 
 class Project {
 
@@ -32,6 +34,9 @@ class Project {
 			else if ( data.branches !== undefined ) {
 				data.branches = [ data.branches, name.right ];
 			}
+			else {
+				data.branches = name.right;
+			}
 		}
 
 		this._name = Object.isObject( name ) ? name.left : null;
@@ -41,6 +46,8 @@ class Project {
 		this._branches = null;
 		this._labels = null;
 		this._events = null;
+		this._deps = null;
+		this._currentBranch = null;
 
 	}
 
@@ -53,12 +60,54 @@ class Project {
 		var vars = this._vars;
 
 		for ( var i = 0, iend = events.length; i < iend; ++i ) {
-			console.cliOutput( vars.render( yaml( events[ i ], vars ) ) );
+			var out = vars.render( yaml( events[ i ], vars ) );
+			if ( out === Dry ) {
+				continue;
+			}
+			console.cliOutput( out );
 		}
 	}
 
+	listDeps ( deps, list ) {
+		for ( var cmd of deps ) {
+			if ( !this._deps.list( cmd, list ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	List ( _list ) {
+
+		var list = _list.List;
+		var name = this._name;
+		if ( list[ name ] === undefined ) {
+			list[ name ] = [];
+		}
+		list[ name ].push( this._currentBranch );
+
+		var argv = this._app.getArgv();
+		var deps = argv.deps;
+		if ( deps === true ) {
+			deps = Deps.AllCmds;
+		}
+		else if ( String.isString( deps ) ) {
+			deps = [ deps ];
+		}
+		if ( deps instanceof Array ) {
+			var list = {};
+			if ( !this.listDeps( deps, list ) ) {
+				return false;
+			}
+			if ( Object.keys( list ).length > 0 ) {
+				_list.Deps[ name + '#' + this._currentBranch ] = list;
+			}
+		}
+		return true;
+	}
+
 	Sync () {
-		if ( this._repo === null ) {
+		if ( this._repo === null && !this._deps.has( 'sync' ) ) {
 			console.warn( 'Can not sync a project (' + this._name + ') without git "repo" configuration. Skipping.' );
 			return true;
 		}
@@ -68,15 +117,25 @@ class Project {
 		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
 
 		this.notify( 'sync.start' );
-		var ret = true;
-		var repos = this._repo;
-		for ( var i = 0, iend = repos.length; ret && i < iend; ++i ) {
-			var repo = repos[ i ];
-			repo.enter();
-			if ( !filter || repo.filter( filter ) ) {
-				ret = repo.Sync();
+
+		var ret = argv.deps ? this._deps.exec( 'sync' ) : true;
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._repo && argv.dry ) {
+			console.info( '[DRY] Sync', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._repo ) {
+			var repos = this._repo;
+			for ( var i = 0, iend = repos.length; ret && i < iend; ++i ) {
+				var repo = repos[ i ];
+				repo.enter();
+				if ( !filter || repo.filter( filter ) ) {
+					ret = repo.Sync();
+				}
+				repo.exit();
 			}
-			repo.exit();
 		}
 		this.notify( ret ? 'sync.success' : 'sync.error' );
 		this.notify( 'sync.finish' );
@@ -94,13 +153,22 @@ class Project {
 
 
 		this.notify( 'clean.start' );
-		var ret = true;
-		if ( this._pod ) {
+
+		var ret = argv.deps ? this._deps.exec( 'clean' ) : true;
+
+		if ( this._pod && argv.dry ) {
+			console.info( '[DRY] Clean pod ', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._pod ) {
 			this._pod.enter();
-			var ret = this._pod.Clean();
+			ret = this._pod.Clean();
 			this._pod.exit();
 		}
-		if ( this._repo ) {
+
+		if ( this._repo && argv.dry ) {
+			console.info( '[DRY] Clean repo', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._repo ) {
 			var vars = this._vars;
 			var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
 			var repos = this._repo;
@@ -113,8 +181,83 @@ class Project {
 				repo.exit();
 			}
 		}
+
 		this.notify( ret ? 'clean.success' : 'clean.error' );
 		this.notify( 'clean.finish' );
+		return ret;
+	}
+
+	Build () {
+		if ( this._image === null && !this._deps.has( 'build' ) ) {
+			console.warn( 'Can not build a project (' + this._name + ') without "image" configuration. Skipping.' );
+			return true;
+		}
+
+		var argv = this._app.getArgv();
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'build.start' );
+
+		var ret = argv.deps ? this._deps.exec( 'build' ) : true;
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._image && argv.dry ) {
+			console.info( '[DRY] Build', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._image ) {
+			var images = this._image;
+			for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+				var image = images[ i ];
+				image.enter();
+				if ( !filter || image.filter( filter ) ) {
+					ret = image.Build();
+				}
+				image.exit();
+			}
+		}
+
+		this.notify( ret ? 'build.success' : 'build.error' );
+		this.notify( 'build.finish' );
+		return ret;
+	}
+
+	Push () {
+		if ( this._image === null && !this._deps.has( 'push' ) ) {
+			console.warn( 'Can not push a project (' + this._name + ') without "image" configuration. Skipping.' );
+			return true;
+		}
+
+		var argv = this._app.getArgv();
+		var vars = this._vars;
+		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
+
+		this.notify( 'push.start' );
+
+		var ret = argv.deps ? this._deps.exec( 'push' ) : true;
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._image && argv.dry ) {
+			console.info( '[DRY] Push', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._image ) {
+			var images = this._image;
+			for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+				var image = images[ i ];
+				image.enter();
+				if ( !filter || image.filter( filter ) ) {
+					ret = image.Push();
+				}
+				image.exit();
+			}
+		}
+
+		this.notify( ret ? 'push.success' : 'push.error' );
+		this.notify( 'push.finish' );
 		return ret;
 	}
 
@@ -127,7 +270,7 @@ class Project {
 			return true;
 		}
 
-		if ( this._image === null ) {
+		if ( this._image === null && !this._deps.has( 'rmi' ) ) {
 			console.warn( 'Can not remove images for a project (' + this._name + ') without "image" configuration. Skipping.' );
 			return true;
 		}
@@ -136,97 +279,85 @@ class Project {
 		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
 
 		this.notify( 'rmi.start' );
-		var ret = true;
-		var images = this._image;
-		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
-			var image = images[ i ];
-			image.enter();
-			if ( !filter || image.filter( filter ) ) {
-				ret = image.Clean();
-			}
-			image.exit();
+
+		var ret = argv.deps ? this._deps.exec( 'rmi' ) : true;
+		if ( ret === false ) {
+			return false;
 		}
+
+		if ( this._image && argv.dry ) {
+			console.info( '[DRY] Rmi', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._image ) {
+			var images = this._image;
+			for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
+				var image = images[ i ];
+				image.enter();
+				if ( !filter || image.filter( filter ) ) {
+					ret = image.Clean();
+				}
+				image.exit();
+			}
+		}
+
 		this.notify( ret ? 'rmi.success' : 'rmi.error' );
 		this.notify( 'rmi.finish' );
 		return ret;
 	}
 
-	Build () {
-		if ( this._image === null ) {
-			console.warn( 'Can not build a project (' + this._name + ') without "image" configuration. Skipping.' );
-			return true;
-		}
-
-		var argv = this._app.getArgv();
-		var vars = this._vars;
-		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
-
-		this.notify( 'build.start' );
-		var ret = true;
-		var images = this._image;
-		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
-			var image = images[ i ];
-			image.enter();
-			if ( !filter || image.filter( filter ) ) {
-				ret = image.Build();
-			}
-			image.exit();
-		}
-		this.notify( ret ? 'build.success' : 'build.error' );
-		this.notify( 'build.finish' );
-		return ret;
-	}
-
-	Push () {
-		if ( this._image === null ) {
-			console.warn( 'Can not push a project (' + this._name + ') without "image" configuration. Skipping.' );
-			return true;
-		}
-
-		var argv = this._app.getArgv();
-		var vars = this._vars;
-		var filter = argv.hasOwnProperty( 'filter' ) ? vars.render( argv.filter ) : null;
-
-		this.notify( 'push.start' );
-
-		var ret = true;
-		var images = this._image;
-		for ( var i = 0, iend = images.length; ret && i < iend; ++i ) {
-			var image = images[ i ];
-			image.enter();
-			if ( !filter || image.filter( filter ) ) {
-				ret = image.Push();
-			}
-			image.exit();
-		}
-		this.notify( ret ? 'push.success' : 'push.error' );
-		this.notify( 'push.finish' );
-		return ret;
-	}
-
 	Run () {
-		if ( this._pod === null ) {
+		if ( this._pod === null && !this._deps.has( 'run' ) ) {
 			console.warn( 'Can not run a project (' + this._name + ') without "pod" configuration. Skipping.' );
 			return true;
 		}
+
+		var argv = this._app.getArgv();
+
 		this.notify( 'run.start' );
-		this._pod.enter();
-		var ret = this._pod.Run();
-		this._pod.exit();
+
+		var ret = argv.deps ? this._deps.exec( 'run' ) : true;
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._pod && argv.dry ) {
+			console.info( '[DRY] Run', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._pod ) {
+			this._pod.enter();
+			ret = this._pod.Run();
+			this._pod.exit();
+		}
+
 		this.notify( ret ? 'run.success' : 'run.error' );
 		this.notify( 'run.finish' );
 		return ret;
 	}
 
 	Stop () {
-		if ( this._pod === null ) {
+		if ( this._pod === null && !this._deps.has( 'stop' ) ) {
 			console.warn( 'Can not stop a project (' + this._name + ') without "pod" configuration. Skipping.' );
 			return true;
 		}
+
+		var argv = this._app.getArgv();
+
 		this.notify( 'stop.start' );
-		this._pod.enter();
-		var ret = this._pod.Stop();
-		this._pod.exit();
+		
+		var ret = argv.deps ? this._deps.exec( 'stop' ) : true;
+		if ( ret === false ) {
+			return false;
+		}
+
+		if ( this._pod && argv.dry ) {
+			console.info( '[DRY] Stop', this._name, this._currentBranch + '.' );
+		}
+		else if ( this._pod ) {
+			this._pod.enter();
+			ret = this._pod.Stop();
+			this._pod.exit();
+		}
+
 		this.notify( ret ? 'stop.success' : 'stop.error' );
 		this.notify( 'stop.finish' );
 		return ret;
@@ -237,8 +368,10 @@ class Project {
 		
 		vars.push();
 
+		this._currentBranch = branch;
+
 		vars.set( 'project', this._name );
-		vars.set( 'branch', branch );
+		vars.set( 'branch', this._currentBranch );
 		vars.set( 'branch.tag', branch === 'master' ? 'latest' : branch );
 		vars.set( 'branch.flat', branch.replace( /[^\d\w]/g, '' ) );
 
@@ -319,9 +452,12 @@ class Project {
 				this._events[ key ] = this._events[ key ].concat( event );
 			}
 		}
+
+		this._deps = new Deps( this, yaml( this._data.deps, vars ) );
 	}
 
 	exit () {
+		this._currentBranch = null;
 		this._vars.pop();
 	}
 
@@ -334,7 +470,7 @@ class Project {
 	}
 
 	isBranchAllowed ( branch ) {
-		var branch = this._vars.get( 'branch' );
+		var branch = this._currentBranch;
 		var branches = this._branches;
 		for ( var i = 0, iend = branches.length; i < iend; ++i ) {
 			var branch2 = branches[ i ];
@@ -351,6 +487,10 @@ class Project {
 
 	getBranches () {
 		return yaml( this._branches, this._vars );
+	}
+
+	getCurrentBranch () {
+		return this._currentBranch;
 	}
 
 	isUsingRepo ( repo ) {

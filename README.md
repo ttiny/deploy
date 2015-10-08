@@ -53,6 +53,8 @@ GitLab on the way.
   - [Webhooks](#webhooks)
   - [Colors in the HTTP output](#colors-in-the-http-output)
 - [Configuration](#configuration)
+  - [Format](#format)
+    - [Conditional markup](#conditional-markup)
   - [HTTP configuration](#http-configuration)
   - [Git authentication](#git-authentication)
     - [Credentials configuration](#credentials-configuration)
@@ -64,6 +66,7 @@ GitLab on the way.
     - [Projects](#projects)
       - [Variables](#variables-1)
       - [Events](#events)
+      - [Dependencies](#dependencies)
       - [Repo configuration](#repo-configuration)
       - [Image configuration](#image-configuration)
       - [Pod configuration](#pod-configuration)
@@ -199,11 +202,16 @@ or without `credentials` configuration for the given `repo`, but only for public
 
 #### Options
 
+These are global options for all all commands. Specific commands may have additional options.
+
 - `--var <name>=<value>` - allows for overriding [global variables](#variables).
   May occur multiple times.
 - `--config <pathname>` - allows for loading config(s) from custom file instead
   of `config/local.yml`. May occur multiple times and configs will be merged.
-
+- `-dry` - performs the command(s) in dry run mode, that is only display what
+  is to be done without actually doing it. This has no effect for the `list`
+  command because it is another form of dry run.
+- `-deps` - performs the commands including all dependencies for these commands.
 
 
 #### Examples
@@ -227,10 +235,13 @@ deploy list "*#*"
 ### Misc commands
 
 #### List
-Lists all matching projects and branches. Useful to test wildcards.
+Lists all matching projects and branches. Useful to test wildcards. If the
+`-deps` switch is given it will show the dependencies of the projects. The
+`-deps` switch can be given an argument to narrow down the dependencies only
+for specific command (`sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`).
 
 ```sh
-deploy list <project[#branch]>
+deploy list <project[#branch]> [-deps[=command]]..
 ```
 
 ### Git commands
@@ -399,7 +410,11 @@ http://myserver.com/sync/myproject/master?secret=itsme
 
 Configuration
 -------------
-The configuration is read from `config.yml` and optionally merged with `config/local.yaml`.
+The configuration is read from `config.yml` and optionally merged with
+`config/local.yaml`. Or optionally, with the `--config` CLI argument, from any
+file.
+
+### Format
 
 The project configuration is in flexible YAML format provided by
 [js-yaml](https://github.com/nodeca/js-yaml). The pod definitions are in YAML
@@ -419,7 +434,38 @@ Property | Description
 `!yamlfile file` | Will parse a YAML file and incorporate its contents in the document.
 `!yamlfiles concat|merge pattern` | Will parse all YAML files matching the `pattern` and incorporate their contents in the document. If `merge` is given and all files contain mappings the return value will be a merged mapping, otherwise an array of all the values.
 `!textfile file` | Will read a file as a plain text and use it as a value.
+`!if ...` | Conditional markup. See [bellow](#conditional-markup).
 
+#### Conditional markup
+It is possible to use the `!if` custom YAML element to create different subtree based on a condition. The syntax is follows:
+
+```yaml
+!if >
+/condition1 operator condition2/
+# then document
+/else/
+# else document
+```
+
+- `condition1` and `condition2` can be a YAML value, including variables.
+- `operator` could be `==` or `!=`.
+- `then document` and `else document` is YAML structure.
+- The `else` block is optional.
+
+**Example:**
+
+Lets assume we have a dev environment and we want to bind some directory as
+volume only on the dev environment. We can place the dependency in an `!if`
+and the markup won't be include in different environment.
+
+```yaml
+deps:
+  run: !if >
+    /${env} == 'dev'/
+    providerkit#{project.sdk.version}: sync
+```
+
+---------
 
 The configuration has three main sections, all placed in the root of the config file.
 
@@ -558,6 +604,8 @@ projects:
       # project specific variables
     events:
       # project specific event handlers
+    deps:
+      # project dependencies
     repo:
       # repo configuration for the project
     image:
@@ -616,12 +664,12 @@ Property | Value type | Description
 `branches` | string\|string[] | Enabled branches for the project. You can specify one or multiple branches. Commands on branches outside of this list will be ignored. The default is `*`, which means all branches are enabled. The [js-yaml](https://github.com/nodeca/js-yaml) `!!js/regexp` custom type can be used here.
 `vars` | mapping | A list of project specific variables. The same as in the root section but all names will only be available in the context of the project, not globally.
 `events` | mapping | A list of project specific event handlers. These are some commands that will be executed upon some event ([see bellow](#events)).
+`deps` | mapping | A list of project dependencies. These are some projects and their commands that will be executed as prerequisite for performing a command on the project ([see bellow](#dependencies)). Dependencies will be ignored if the `-deps` flag is not given.
 `repo` | mapping\|mapping[] | Repo configuration for the project. [See bellow](#repo-configuration).
 `image` | mapping\|mapping[] | Docker image configuration for the project. [See bellow](#docker-configuration).
 `pod` | mapping | Pod configuration for the project. [See bellow](#pod-configuration).
 
 ###### Variables
-
 Besides the [global variables](#variables) defined in the root of the configuration, the following variables will available in the scope of the project.
 
 Variable | Description
@@ -632,7 +680,6 @@ Variable | Description
 `{branch.flat}` | Name of the current branch with all non-word and non-digit characters removed. E.g. for branch `1.1` this will be `11`.
 
 ###### Events
-
 Projects support events. Events are executed before and after each command. The name of the event is composed from the name of the command (`sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`) and a suffix:
 
 
@@ -655,6 +702,64 @@ events:
     - !cmd ls -l {project.local}/lib/sdk
     - !cmd rm -rf {project.local}/lib/sdk
 ```
+
+###### Dependencies
+Projects can declare dependencies with other projects. It is possible to
+create dummy projects that does nothing but declare dependencies and this way
+group projects logically. Dependencies will only be executed if the `-deps`
+CLI flag is given.
+
+Dependencies are given per command or for all commands. All sections are optional.
+The `#branch` is also optional if it is possible to infer it, i.e. if the project
+has only one static branch defined.
+
+```yaml
+deps:
+  all:
+    - project1#branch
+    - project2#branch
+    # ...
+  command:
+    all: command1, command2
+    project#branch: command1, command2
+    project#branch: command1, command2
+```
+
+Event | Type | Description
+---- | ---- | ----
+`all` | string[] | Array of projects and they branches that will be inserted as dependency for each command. The subcommand, that is the command executed on the dependency will be the same as the command on the main project.
+`command`: mapping | `command` should be replace with the actual command, i.e. one of `sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`. Each key of the mapping is a dependency project with its branch. The value is either an array if commands to be performed on the dependency or string that is command separated list of commands. The `all` key has special meaning - it is not a project but can be used to override the command(s) that will be performed on the projects in the all section, instead of performing the same command as the main project.
+
+**Example:**
+
+In this example if we execute `deploy build fullsystem`, this will perform
+build on `ws1#1.1`, `ws2#1.2`, `ws3#1.3` and `ws4#master`. And if we perform
+run this will perform `build` and `run` on the same projects. One can use the
+`list` command with `-deps` or test with `-dry` to test dependencies.
+
+```yaml
+projects:
+  fullsystem#master:
+    deps:
+      all:
+        - services
+        - suppliers
+      run:
+        all: build, run
+
+  services#master:
+    deps:
+      all:
+        - ws1#1.1
+        - ws2#1.2
+        - ws3#1.3
+
+  suppliers#master:
+    deps:
+      all:
+        - ws4#master
+```
+
 
 ##### Repo configuration
 This configuration is mandatory for the [git commands](#git-commands). It is a

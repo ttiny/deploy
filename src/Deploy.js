@@ -9,6 +9,7 @@ var VarStack = require( './VarStack' );
 var Netmask = require( 'netmask' ).Netmask;
 var Path = require( 'path' );
 var Argv = require( 'App/Argv' )
+var Util = require( 'util' );
 
 require( './YamlHelpers' );
 require( './LogHelpers' );
@@ -74,6 +75,10 @@ class Deploy extends HttpApp {
 		this._templates = null;
 		this._credentials = null;
 		this._branchesCache = {};
+		this._list = { List: {}, Deps: {} };
+		this._depsCtx = { '#stack': [] };
+		this._depsCache = {};
+		this._level = 0;
 		
 		this.loadConfig();
 
@@ -134,36 +139,60 @@ class Deploy extends HttpApp {
 		return name == 'List' || Project.prototype[ name ] instanceof Function;
 	}
 
-	doSingleAction ( action, project, branch, list ) {
+	_isCached ( project, cmd ) {
+		var current = project.getName() + '#' + project.getCurrentBranch() + ' ' + cmd;
+		if ( this._depsCache[ current ] ) {
+			return true;
+		}
+		this._depsCache[ current ] = true;
+		return false;
+	}
 
+	doSingleAction ( action, project, branch ) {
 
 		project.enter( branch );
 		if ( !project.isBranchAllowed( branch ) ) {
 			project.exit();
 			return;
 		}
+
+		if ( this._isCached( project, action ) ) {
+			console.warn( 'Using', project.getName() + '#' + project.getCurrentBranch(), action, 'from cache.' );
+			project.exit();
+			return true;
+		}
 		
 		if ( action == 'List' ) {
-			var name = project.getName();
-			if ( list[ name ] === undefined ) {
-				list[ name ] = [];
+			if ( !project[ action ]( this._list ) ) {
+				process.exitCode = 1;
 			}
-			list[ name ].push( branch );
-			project.exit();
-			return;
-		}
-
-		console.infoGroup( action + 'ing project', project.getName(), 'branch', branch, '...' );
-		console.infoGroup( '==========' );
-		if ( project[ action ]( this.getArgv() ) ) {
-			console.infoGroup( 'All good.' )
 		}
 		else {
-			process.exitCode = 1;
-			//todo: mail someone
+
+			++this._level;
+			console.infoGroup( ( this._level > 2 ? '#'.repeat( this._level ) + ' ' : '' ) + action + 'ing project', project.getName(), 'branch', branch, '...' );
+			if ( this._level == 1 ) {
+				console.infoGroup( '==========' );
+			}
+			else if ( this._level == 2 ) {
+				console.infoGroup( '----------' );
+			}
+
+			if ( project[ action ]() ) {
+				console.infoGroup( 'All good.\n' )
+			}
+			else {
+				if ( this._level == 1 ) {
+					console.error( 'Finished with errors.\n' )
+				}
+				process.exitCode = 1;
+				//todo: mail someone
+			}
 		}
-		console.log( '\n' );
+
+		--this._level;
 		project.exit();
+		return process.exitCode != 1;
 	}
 
 	doAction ( action, project, branch, callback ) {
@@ -247,7 +276,7 @@ class Deploy extends HttpApp {
 							return;
 						}
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
-							_this.doSingleAction( action, project, branches[ i ], list );
+							_this.doSingleAction( action, project, branches[ i ] );
 						}
 						if ( --projectsLeft == 0 ) {
 							done();
@@ -257,7 +286,7 @@ class Deploy extends HttpApp {
 				else if ( branch == '**' ) {
 					let branch = _this.getOnlyBranch( project );
 					if ( branch !== null ) {
-						_this.doSingleAction( action, project, branch, list );
+						_this.doSingleAction( action, project, branch );
 					}
 					else {
 						console.warn( 'Couldn\'t auto decide appropriate branch for project', project.getName() + ', skipping.' );
@@ -267,7 +296,7 @@ class Deploy extends HttpApp {
 					}
 				}
 				else {
-					_this.doSingleAction( action, project, branch, list );
+					_this.doSingleAction( action, project, branch );
 					if ( --projectsLeft == 0 ) {
 						done();
 					}
@@ -281,22 +310,7 @@ class Deploy extends HttpApp {
 					return;
 				}
 
-				var empty = true;
-				for ( var name in list ) {
-					var branches = list[ name ].sort();
-					if ( empty ) {
-						empty = false;
-						console.infoGroup( 'Listing projects:' );
-					}
-					console.info( name + ':', branches.join( ', ' ) );
-				}
-				if ( empty ) {
-					console.infoGroup( 'No matches found to list.' );
-				}
-				else {
-					console.infoGroup( '^^^^^\n' );
-				}
-
+				_this.printList();
 				callback();
 			}
 		}
@@ -306,6 +320,64 @@ class Deploy extends HttpApp {
 
 	printUsage () {
 		console.log( 'deploy <command[,command]..> <project[#branch]>.. [OPTIONS]..' );
+	}
+
+	getList () {
+		return this._list;
+	}
+
+	getDepsCtx () {
+		return this._depsCtx;
+	}
+
+	printList () {
+		var list = this._list.List;
+		var empty = true;
+		for ( var name in list ) {
+			var branches = list[ name ].sort();
+			if ( empty ) {
+				empty = false;
+				console.infoGroup( 'Listing projects:' );
+			}
+			console.info( name + ':', branches.join( ', ' ) );
+		}
+		if ( empty ) {
+			console.infoGroup( 'No matches found to list.' );
+		}
+		else {
+			console.infoGroup( '^^^^^\n' );
+		}
+
+		if ( !this.getArgv().deps ) {
+			return;
+		}
+
+		var list = this._list.Deps;
+		var empty = Object.keys( list ).length == 0;
+		if ( empty ) {
+			console.infoGroup( 'No dependecies found to list.' );
+		}
+		else {
+
+			function printOne ( item, level ) {
+				if ( item instanceof Array ) {
+					for ( var i of item ) {
+						printOne( i, level );
+					}
+				}
+				else if ( item instanceof Object ) {
+					for ( var key in item ) {
+						var sub = item[ key ];
+						console.info( '  '.repeat( level ) + key + ':', String.isString( sub ) ? sub : '' );
+						printOne( sub, level + 1 );
+					}
+				}
+			}
+
+			console.infoGroup( 'Listing dependecies:' );
+			printOne( list, 0 );
+			console.infoGroup( '^^^^^\n' );
+		}		
 	}
 
 	normalizeProject ( prj ) {
@@ -321,7 +393,7 @@ class Deploy extends HttpApp {
 	}
 
 	loadConfig () {
-		this._vars = new VarStack;
+		this._vars = new VarStack( this );
 		this._projects = [];
 		this._templates = [];
 		this._credentials = {};
@@ -366,6 +438,12 @@ class Deploy extends HttpApp {
 		if ( projects instanceof Array ) {
 			var prjs = [];
 			// load the templates first cause the projects need them
+			for ( var i = 0; i < projects.length; ++i ) {
+				if ( projects[ i ] instanceof Array ) {
+					Array.prototype.splice.apply( projects, [ i, 1 ].concat( projects[ i ] ) );
+					--i;
+				}
+			}
 			for ( var project of projects ) {
 				project = this.normalizeProject( project );
 				var isTemplate = yaml( project.template, this._vars );

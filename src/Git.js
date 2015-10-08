@@ -223,7 +223,7 @@ class Git {
 			var local = this._local + '/';
 			var files = match[ 1 ]
 				.split( '\n' )
-				.map( 'trim' )
+				.map( it => it.trim() )
 				.filter( ( file ) => {
 					return file.length > 0;
 				} )
