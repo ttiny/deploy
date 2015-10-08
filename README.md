@@ -728,7 +728,7 @@ deps:
 Event | Type | Description
 ---- | ---- | ----
 `all` | string[] | Array of projects and they branches that will be inserted as dependency for each command. The subcommand, that is the command executed on the dependency will be the same as the command on the main project.
-`command`: mapping | `command` should be replace with the actual command, i.e. one of `sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`. Each key of the mapping is a dependency project with its branch. The value is either an array if commands to be performed on the dependency or string that is command separated list of commands. The `all` key has special meaning - it is not a project but can be used to override the command(s) that will be performed on the projects in the all section, instead of performing the same command as the main project.
+`command` | mapping | `command` should be replace with the actual command, i.e. one of `sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`. Each key of the mapping is a dependency project with its branch. The value is either an array if commands to be performed on the dependency or string that is command separated list of commands. The `all` key has special meaning - it is not a project but can be used to override the command(s) that will be performed on the projects in the all section, instead of performing the same command as the main project.
 
 **Example:**
 
