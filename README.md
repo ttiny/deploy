@@ -728,11 +728,11 @@ deps:
 Event | Type | Description
 ---- | ---- | ----
 `all` | string[] | Array of projects and they branches that will be inserted as dependency for each command. The subcommand, that is the command executed on the dependency will be the same as the command on the main project.
-`command` | mapping | `command` should be replace with the actual command, i.e. one of `sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`. Each key of the mapping is a dependency project with its branch. The value is either an array if commands to be performed on the dependency or string that is command separated list of commands. The `all` key has special meaning - it is not a project but can be used to override the command(s) that will be performed on the projects in the all section, instead of performing the same command as the main project.
+`command` | mapping | `command` should be replaced with the actual command, i.e. one of `sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`. Each key of the mapping is a dependency project with its branch. The value is either an array of commands to be performed on the dependency or string that is comma separated list of commands. The `all` key under the `command` has special meaning - it is not a project but can be used to override the command(s) that will be performed on the projects in the `all` section, instead of performing the same command as the main project.
 
 **Example:**
 
-In this example if we execute `deploy build fullsystem`, this will perform
+In this example if we execute `deploy build fullsystem -deps`, this will perform
 build on `ws1#1.1`, `ws2#1.2`, `ws3#1.3` and `ws4#master`. And if we perform
 run this will perform `build` and `run` on the same projects. One can use the
 `list` command with `-deps` or test with `-dry` to test dependencies.
