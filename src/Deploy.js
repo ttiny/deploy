@@ -140,6 +140,11 @@ class Deploy extends HttpApp {
 	}
 
 	_isCached ( project, cmd ) {
+
+		if ( this.getArgv()[ 'no-deps-cache' ] ) {
+			return false;
+		}
+
 		var current = project.getName() + '#' + project.getCurrentBranch() + ' ' + cmd;
 		if ( this._depsCache[ current ] ) {
 			return true;
