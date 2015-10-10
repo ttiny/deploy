@@ -20,6 +20,15 @@ From these sources Docker images would be built and and pushed to a registry
 and finally the images can be deployed, without sources outside the containers,
 to staging and production. For overview tutorial of this process check [here](https://github.com/Perennials/deploy/tree/master/examples/tutorial).
 
+**deploy**'s configuration is suited for managing more than a few projects:
+- It is declarative and short to type.
+- It supports splitting the configuration into files.
+- It supports reusable/extendable projects templates.
+- It supports project dependencies.
+- One can create hollow projects only describing dependencies to other projects
+  and in this way manage whole sever deployments with simple few word
+  commands.
+
 All functionality is available via CLI or REST interface and the REST server
 also handles webhooks. Currently the webhooks from GitHub are supported with
 GitLab on the way.
