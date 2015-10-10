@@ -22,8 +22,8 @@ to staging and production. For overview tutorial of this process check [here](ht
 
 **deploy**'s configuration is suited for managing more than a few projects:
 - It is declarative and short to type.
-- It supports splitting the configuration into files.
-- It supports reusable/extendable projects templates.
+- It supports splitting the configuration into multiple files (e.g. one per project).
+- It supports reusable/extendable project templates.
 - It supports project dependencies.
 - One can create hollow projects only describing dependencies to other projects
   and in this way manage whole sever deployments with simple few word
