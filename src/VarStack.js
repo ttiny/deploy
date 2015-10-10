@@ -13,6 +13,14 @@ class VarStack {
 		return this._app;
 	}
 
+	duplicate () {
+		var ret = new VarStack();
+		ret._app = this._app;
+		ret._levels = this._levels.duplicate();
+		ret._vars = this._vars.duplicate();
+		return ret;
+	}
+
 	print () {
 		var vars = this._vars;
 		console.info( 'Vars:', '\n-----' )

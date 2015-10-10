@@ -11,7 +11,7 @@ class Project {
 	constructor ( app, vars, data ) {
 
 		this._app = app;
-		this._vars = vars;
+		this._vars = vars.duplicate();
 
 		while ( yaml( data.extends, vars ) ) {
 			var tmpl = app.getTemplate( data.extends );
