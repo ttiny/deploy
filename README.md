@@ -1,9 +1,8 @@
 Deploy
 ======
-A tool for git and Docker deployments.
+A tool for git and Docker deployments. A middle ground between simple Docker composition tools and full blown cluster orchestration.
 
-_The project is in pre-release state and is still being shaped by using it and
-finding better ways to do so in our environment._
+_The project is not battle tested in production yet._
 
 The tool performs three functions (not necessarily all of them):
 
