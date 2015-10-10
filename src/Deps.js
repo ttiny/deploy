@@ -65,11 +65,16 @@ class Deps {
 				// copy from the specific cmd
 				var prjCmds = vars.render( yaml( cmdDeps[ prj ] ) );
 				var prj = vars.render( prj );
-				if ( String.isString( prjCmds ) ) {
-					prjCmds = prjCmds.split( ',' ).map( it => it.trim() );
+				if ( prjCmds == 'skip' ) {
+					delete this._deps[ cmd ][ prj ];
 				}
-				if ( prjCmds instanceof Array ) {
-					this._deps[ cmd ][ prj ] = prjCmds;
+				else {
+					if ( String.isString( prjCmds ) ) {
+						prjCmds = prjCmds.split( ',' ).map( it => it.trim() );
+					}
+					if ( prjCmds instanceof Array ) {
+						this._deps[ cmd ][ prj ] = prjCmds;
+					}
 				}
 			}
 		}
