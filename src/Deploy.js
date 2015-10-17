@@ -268,9 +268,15 @@ class Deploy extends HttpApp {
 			projects = projects.unique();
 
 			var projectsLeft = projects.length;
+			var _branch = branch;
 
 			for ( var i = 0, iend = projects.length; i < iend; ++i ) {
 				let project = projects[ i ];
+				let branch = _branch;
+				if ( project instanceof Array ) {
+					branch = project[ 1 ];
+					project = project[ 0 ];
+				}
 
 				if ( branch == '*' ) {
 					// this is async, but doSingleAction is sync so they won't be executed in parallel
@@ -601,7 +607,7 @@ class Deploy extends HttpApp {
 						for ( var i = 0, iend = branches.length; i < iend; ++i ) {
 							project.enter( branches[ i ] );
 							if ( project.isUsingRepo( repo ) ) {
-								ret.push( project );
+								ret.push( [ project, branches[ i ] ] );
 							}
 							project.exit();
 						}
@@ -617,7 +623,7 @@ class Deploy extends HttpApp {
 			for ( var project of projects ) {
 				project.enter( branch );
 				if ( project.isUsingRepo( repo ) ) {
-					ret.push( project );
+					ret.push( [ project, brach ] );
 				}
 				project.exit();
 			}

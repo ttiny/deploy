@@ -6,6 +6,7 @@
 - Added `!if` custom YAML element.
 - Added project dependencies support.
 - Added dry run support.
+- Fixed a problem with syncing by repo where all project branches were synced.
 - **Breaking:** Changed the syntax of `!yamlfiles` to explicitly specify if the files should be merged or concatenated.
 - **Breaking:** Remove forced `project.` prefix for project variables.
 
