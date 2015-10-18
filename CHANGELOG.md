@@ -3,7 +3,9 @@
 - Added colors to the output.
 - Added the ability to have multiple configurations for the same project.
 - Added `list` command.
+- Added `start` command, alias for `run`.
 - Added `!if` custom YAML element.
+- Added `!deploy` custom YAML element.
 - Added project dependencies support.
 - Added dry run support.
 - Fixed a problem with syncing by repo where all project branches were synced.

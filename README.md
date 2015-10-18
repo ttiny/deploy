@@ -346,7 +346,7 @@ All non-existing host directories that are to be bound as container volumes will
 created prior to launching the pod.
 
 ```sh
-deploy run <project[#branch]> [-debug-pod[=more]]
+deploy run|start <project[#branch]> [-debug-pod[=more]]
 ```
 
 `-debug-pod` will print the rendered pod definition which is passed to
@@ -450,6 +450,7 @@ Property | Description
 `!yamlfiles concat|merge pattern` | Will parse all YAML files matching the `pattern` and incorporate their contents in the document. If `merge` is given and all files contain mappings the return value will be a merged mapping, otherwise an array of all the values.
 `!textfile file` | Will read a file as a plain text and use it as a value.
 `!if ...` | Conditional markup. See [bellow](#conditional-markup).
+`!deploy command project#branch` | Performs a **deploy** command on the specified project and branch. E.g. `!deploy sync myproject#1.0`. The branch can be omitted if it can be inferred from the config. The project and branch syntax here only supports literal project and branch name, no wildcards or repos like on the CLI.
 
 #### Conditional markup
 It is possible to use the `!if` custom YAML element to create different subtree based on a condition. The syntax is follows:

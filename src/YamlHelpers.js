@@ -6,11 +6,12 @@ var Echo = require( './yamltypes/Echo' );
 var YamlFile = require( './yamltypes/YamlFile' );
 var YamlFiles = require( './yamltypes/YamlFiles' );
 var TextFile = require( './yamltypes/TextFile' );
+var Deploy = require( './yamltypes/Deploy' );
 var If = require( './yamltypes/If' );
 var DeferredYaml = require( './yamltypes/Deferred' );
 var Fs = require( 'fs' );
 
-Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ If, Cmd, Echo, YamlFile, YamlFiles, TextFile ] );
+Yaml.DEPLOY_SCHEMA = Yaml.Schema.create( Yaml.DEFAULT_FULL_SCHEMA, [ Deploy, If, Cmd, Echo, YamlFile, YamlFiles, TextFile ] );
 
 global.yaml = function ( yaml, vars ) {
 	if ( yaml instanceof DeferredYaml ) {

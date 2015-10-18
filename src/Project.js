@@ -61,7 +61,7 @@ class Project {
 
 		for ( var i = 0, iend = events.length; i < iend; ++i ) {
 			var out = vars.render( yaml( events[ i ], vars ) );
-			if ( out === Dry ) {
+			if ( out === Dry || out === null || out === undefined ) {
 				continue;
 			}
 			console.cliOutput( out );
@@ -303,6 +303,10 @@ class Project {
 		this.notify( ret ? 'rmi.success' : 'rmi.error' );
 		this.notify( 'rmi.finish' );
 		return ret;
+	}
+
+	Start () {
+		return this.Run();
 	}
 
 	Run () {
