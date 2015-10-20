@@ -346,11 +346,14 @@ All non-existing host directories that are to be bound as container volumes will
 created prior to launching the pod.
 
 ```sh
-deploy run|start <project[#branch]> [-debug-pod[=more]]
+deploy run|start <project[#branch]> [-debug-pod[=more]] [--cmd command]
 ```
 
 `-debug-pod` will print the rendered pod definition which is passed to
 rocker-compose. Adding `=more` will print even more info from rocker-compose.
+
+`--cmd` is a special case and if passed it will carry to a variable called `cmd` in
+rocker-compose, so it can be used in the pod definition to customise the container command.
 
 #### Stop
 The command will run the Docker container(s) pod for the specified project and branch.
