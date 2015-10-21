@@ -274,7 +274,7 @@ don't want to explain how to install git here, if you don't have it, you
 probably don't need to sync git repos. rocker-compose can be
 [downloaded](https://github.com/grammarly/rocker-compose/releases) as binary.
 Just extract it and put it in your path. The tested version in this tutorial
-is `0.1.0`.
+is `0.1.1`.
 
 1. Deploy depends on node.js, until I have the time to pack it neatly and
    distribute it as a single binary. So
