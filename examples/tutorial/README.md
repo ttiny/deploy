@@ -84,6 +84,7 @@ Now lets make a **deploy** config for our application. Create a file called
 `deploy/config/local.yml`, but here we make separate file for the tutorial.
 
 A **deploy** project configuration consists of three independent sections.
+
 1. `repo` section which is used for git commands like `sync` and `clean`. Here
    we describe which repositories to sync and where to sync them. We need this
    section if we want to sync in response of webhooks.
