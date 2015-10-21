@@ -88,7 +88,7 @@ A **deploy** project configuration consists of three independent sections.
 1. `repo` section which is used for git commands like `sync` and `clean`. Here
    we describe which repositories to sync and where to sync them. We need this
    section if we want to sync in response of webhooks.
-2. `docker` section which is used for Docker commands like `build` and `push`
+2. `image` section which is used for Docker commands like `build` and `push`
    and `rmi`. This is where we describe what image we are building and from
    where.
 3. `pod` section which is used for the `run` and `stop` commands. Here we
