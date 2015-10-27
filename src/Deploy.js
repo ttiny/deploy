@@ -74,7 +74,7 @@ class Deploy extends HttpApp {
 		this._projects = null;
 		this._templates = null;
 		this._credentials = null;
-		this._branchesCache = {};
+		this._branchesCache = new WeakMap();
 		this._list = { List: {}, Deps: {} };
 		this._depsCtx = { '#stack': [] };
 		this._depsCache = {};
@@ -524,12 +524,12 @@ class Deploy extends HttpApp {
 		var _this = this;
 		callback = function ( err, branches ) {
 			if ( !err ) {
-				_this._branchesCache[ project.getName() ] = branches;
+				_this._branchesCache.set( project, branches );
 			}
 			_callback( err, branches );
 		};
 
-		var cache = this._branchesCache[ project.getName() ];
+		var cache = this._branchesCache.get( project );
 		if ( cache !== undefined ) {
 			callback( null, cache );
 			return;
@@ -596,7 +596,8 @@ class Deploy extends HttpApp {
 	findProjectsByRepo ( repo, branch, callback ) {
 		var projects = this._projects;
 		var ret = [];
-		var projectsLeft = Object.keys( projects ).length;
+		var projectsLeft = projects.length;
+
 		if ( branch == '*' ) {
 			for ( let project of projects ) {
 				this.getProjectBranches( project, function ( err, branches ) {
@@ -623,7 +624,7 @@ class Deploy extends HttpApp {
 			for ( var project of projects ) {
 				project.enter( branch );
 				if ( project.isUsingRepo( repo ) ) {
-					ret.push( [ project, brach ] );
+					ret.push( [ project, branch ] );
 				}
 				project.exit();
 			}
