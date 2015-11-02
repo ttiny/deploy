@@ -12,11 +12,11 @@ to the official Docker tutorials.
 - [Creating a docker image](#creating-a-docker-image)
 - [Setting up **deploy** config for the application](#setting-up-deploy-config-for-the-application)
 - [Setting up **deploy**](#setting-up-deploy)
-  - [As Docker image](#as-docker-image)
-  - [Native installation](#native-installation)
+	- [As Docker image](#as-docker-image)
+	- [Native installation](#native-installation)
 - [Syncing with **deploy**](#syncing-with-deploy)
-  - [Manually](#manually)
-  - [With webhooks](#with-webhooks)
+	- [Manually](#manually)
+	- [With webhooks](#with-webhooks)
 - [Building a Docker image with **deploy**](#building-a-docker-image-with-deploy)
 - [Running with **deploy**](#running-with-deploy)
 - [Pushing with **deploy**](#pushing-with-deploy)
@@ -253,7 +253,7 @@ because Docker CLI commands are quite lengthy. On Unix based system make a
 2. Test our script.
 
    ```sh
-   ./deploy.sh --var debug=true
+   ./deploy.sh test --var debug=true
    ```
 
    We should get output like this. Deploy will print the global variables and terminate because other parameters are not given.
