@@ -695,7 +695,6 @@ Variable | Description
 ---- | ----
 `{project}` | Name of the current project.
 `{branch}` | Name of the current branch.
-`{branch.tag}` | Name of the current branch according to Docker's convention. Put simply this will be `latest` for branch named `master`, otherwise will be the same as `{branch}`.
 
 ###### Events
 Projects support events. Events are executed before and after each command. The name of the event is composed from the name of the command (`sync`, `clean`, `build`, `push`, `rmi`, `run`, `stop`) and a suffix:
