@@ -377,7 +377,6 @@ class Project {
 		vars.set( 'project', this._name );
 		vars.set( 'branch', this._currentBranch );
 		vars.set( 'branch.tag', branch === 'master' ? 'latest' : branch );
-		vars.set( 'branch.flat', branch.replace( /[^\d\w]/g, '' ) );
 
 		var locals = this._data.vars;
 		if ( locals instanceof Object ) {

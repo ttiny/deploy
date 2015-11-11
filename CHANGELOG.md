@@ -3,6 +3,7 @@
 - Added `start` command, alias for `run`.
 - Added `!deploy` custom YAML element.
 - Fixed a problem with syncing by repo where all project branches were synced.
+- Removed `{branch.flat}` predefined variable. This can be achieved with JS function in the YAML.
 
 0.2
 ---
