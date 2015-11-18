@@ -31,7 +31,7 @@ class Rocker {
 			args.push( '-f', this._file );
 		}
 		if ( isRocker ) {
-			var image = this._image.splitFirst( ':' );
+			var image = this._image.splitLast( ':' );
 			args.push( '--var', 'image=' + image.left, '--var', 'tag=' + image.right );
 			for ( var name in this._vars ) {
 				args.push( '--var', name + '=' + this._vars[ name ] );

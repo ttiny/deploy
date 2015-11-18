@@ -5,6 +5,7 @@
 - Fixed a problem with syncing by repo where all project branches were synced.
 - Removed `{branch.flat}` predefined variable. This can be achieved with JS function in the YAML.
 - Removed `{branch.tag}` predefined variable. This can be achieved with JS function in the YAML.
+- Fixed problem with image names when using rocker with custom registry with port.
 
 0.2
 ---
