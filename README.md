@@ -5,7 +5,7 @@ A tool for git and Docker deployments. A middle ground between simple Docker com
 _The project is not battle tested in production yet._
 
 The tool performs three functions (not necessarily all of them):
-
+ 
 1. [Synchronizes](#git-commands) local git repositori(es), possibly triggered
    by a [webhook](#rest-usage).
 2. [Builds](#image-commands) Docker images and pushes them to a Docker
