@@ -873,3 +873,5 @@ base:
 Authors
 -------
 Borislav Peev (borislav.asdf at gmail dot com)
+Tino Jahnke (tino.jahnke at web dot de)
+Jan Müller (to be filled)
